@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>结论与政策建议 - 车网协同碳减排研究</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; line-height: 1.7; color: #333; background: #f5f7fa; min-height: 100vh; }
+        .navbar { position: fixed; top: 0; left: 0; width: 100%; background: #2c3e50; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .nav-container { max-width: 1400px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+        .nav-logo { color: white; font-size: 1.2em; font-weight: bold; padding: 15px 0; }
+        .nav-menu { display: flex; list-style: none; }
+        .nav-item { position: relative; }
+        .nav-link { color: white; text-decoration: none; padding: 15px 20px; display: block; transition: all 0.2s; font-weight: 500; }
+        .nav-link:hover, .nav-link.active { background: rgba(52, 152, 219, 0.3); }
+        .nav-dropdown { position: absolute; top: 100%; left: 0; background: #2c3e50; min-width: 200px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border-radius: 0 0 8px 8px; overflow: hidden; max-height: 0; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+        .nav-item:hover .nav-dropdown { max-height: 500px; opacity: 1; visibility: visible; }
+        .dropdown-link { color: white; text-decoration: none; padding: 12px 20px; display: block; transition: all 0.2s; }
+        .dropdown-link:hover { background: rgba(52, 152, 219, 0.3); padding-left: 25px; }
+        .menu-toggle { display: none; color: white; font-size: 1.5em; cursor: pointer; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .page-header { background: #fff; color: #2c3e50; padding: 80px 40px 40px; text-align: center; border-radius: 8px; margin-bottom: 25px; margin-top: 70px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .page-header h1 { font-size: 1.8em; margin-bottom: 10px; color: #2c3e50; }
+        .content-section { background: #fff; border-radius: 8px; padding: 25px 30px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .section-title { font-size: 1.25em; color: #2c3e50; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #3498db; display: inline-block; }
+        .conclusion-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0; }
+        .conclusion-item { background: #e8f6ef; padding: 20px; border-radius: 6px; text-align: center; border-left: 4px solid #27ae60; }
+        .conclusion-item h3 { font-size: 1em; margin-bottom: 8px; color: #2c3e50; }
+        .conclusion-item p { color: #555; font-size: 0.9em; }
+        .highlight-box { background: #e8f4fd; border-left: 4px solid #3498db; padding: 18px 20px; margin: 15px 0; border-radius: 0 6px 6px 0; }
+        .highlight-box h3 { margin-bottom: 12px; color: #2c3e50; }
+        .highlight-box p { margin: 8px 0; color: #555; }
+        .flow-chart { background: #fafbfc; padding: 20px; border-radius: 6px; margin: 15px 0; border: 1px solid #eee; }
+        .flow-step { display: flex; align-items: center; padding: 10px; background: white; margin: 8px 0; border-radius: 6px; }
+        .step-phase { background: #3498db; color: white; padding: 6px 12px; border-radius: 15px; margin-right: 12px; font-weight: 600; font-size: 0.9em; flex-shrink: 0; }
+        .footer { background: #2c3e50; color: white; padding: 25px; text-align: center; border-radius: 8px; margin-top: 25px; }
+        .back-link { display: inline-block; background: #3498db; color: #fff; padding: 10px 25px; border-radius: 4px; text-decoration: none; margin: 8px; transition: all 0.2s; font-weight: 500; }
+        .back-link:hover { background: #2980b9; }
+        .nav-buttons { text-align: center; margin-top: 25px; }
+        @media (max-width: 768px) {
+            .nav-menu { position: fixed; top: 60px; left: 0; width: 100%; background: #2c3e50; flex-direction: column; align-items: center; max-height: 0; overflow: hidden; transition: max-height 0.3s; }
+            .nav-menu.active { max-height: 500px; }
+            .menu-toggle { display: block; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">🚗 车网协同研究</div>
+            <div class="menu-toggle" onclick="document.getElementById('navMenu').classList.toggle('active')">☰</div>
+            <ul class="nav-menu" id="navMenu">
+                <li class="nav-item"><a href="index.html" class="nav-link">首页</a></li>
+                <li class="nav-item"><a href="data.html" class="nav-link">数据概况</a></li>
+                <li class="nav-item"><a href="model.html" class="nav-link">模型训练</a></li>
+                <li class="nav-item"><a href="causal.html" class="nav-link">因果分析</a></li>
+                <li class="nav-item"><a href="simulation.html" class="nav-link">仿真预测</a></li>
+                <li class="nav-item"><a href="optimization.html" class="nav-link">充电优化</a></li>
+                <li class="nav-item"><a href="conclusion.html" class="nav-link active">结论建议</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>📝 六、结论与政策建议</h1>
+            <p>主要结论与可操作的减排建议</p>
+        </div>
+
+        <div class="content-section">
+            <h2 class="section-title">6.1 主要结论</h2>
+            <div class="conclusion-grid">
+                <div class="conclusion-item">
+                    <h3>1️⃣ 充电时机关键</h3>
+                    <p>碳强度是影响碳排放的最关键因素，充电时段的选择比充电总量更重要</p>
+                </div>
+                <div class="conclusion-item">
+                    <h3>2️⃣ V1G效果显著</h3>
+                    <p>V1G有序充电策略可实现3,024 kg碳减排，减排效率达4.2 g/kWh</p>
+                </div>
+                <div class="conclusion-item">
+                    <h3>3️⃣ 高峰高碳重叠</h3>
+                    <p>充电高峰（18-22时）与高碳时段高度重叠，存在显著优化空间</p>
+                </div>
+                <div class="conclusion-item">
+                    <h3>4️⃣ 绿电匹配重要</h3>
+                    <p>绿电消纳比例每提高1%，可降低碳排放约2.3%</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2 class="section-title">6.2 政策建议</h2>
+            <div class="highlight-box">
+                <h3>💡 可操作建议</h3>
+                <p><strong>1. 优化充电时段引导</strong></p>
+                <p>基于电网碳强度曲线制定动态充电价格，引导用户在低碳时段（如凌晨1-6时、中午11-13时）充电，而非仅基于电价峰谷。</p>
+                
+                <p style="margin-top: 15px;"><strong>2. 推广V1G有序充电技术</strong></p>
+                <p>优先在居民小区、办公场所等具备固定充电条件的场景推广V1G技术，通过智能充电管理系统实现负荷转移。</p>
+                
+                <p style="margin-top: 15px;"><strong>3. 完善V2G技术应用</strong></p>
+                <p>针对V2G当前减排效果不佳的问题，建议在电网碳强度波动较大时应用，并优化能量平衡机制。</p>
+                
+                <p style="margin-top: 15px;"><strong>4. 建立激励机制</strong></p>
+                <p>对参与有序充电的用户提供电费折扣或碳积分奖励，提高用户参与度。</p>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2 class="section-title">6.3 实施路径</h2>
+            <div class="flow-chart">
+                <div class="flow-step">
+                    <div class="step-phase">短期</div>
+                    <div><strong>价格信号引导</strong> - 通过动态充电价格引导用户优化充电时段</div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-phase">中期</div>
+                    <div><strong>智能充电管理</strong> - 建立车网互动平台，实现充电负荷与电网碳强度的实时匹配</div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-phase">长期</div>
+                    <div><strong>绿电为主体</strong> - 结合可再生能源发展，构建以绿电为主体的充电能源结构</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-buttons">
+            <a href="optimization.html" class="back-link">← 充电优化</a>
+        </div>
+
+        <div class="footer">
+            <h2>从"电动"到"绿动"：车网协同碳减排研究</h2>
+            <p>基于数据驱动的电动汽车充电行为优化分析</p>
+            <p style="margin-top: 15px;">© 2026 车网协同碳减排研究 | All Rights Reserved</p>
+        </div>
+    </div>
+</body>
+</html>

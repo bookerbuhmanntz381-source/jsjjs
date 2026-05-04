@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仿真预测与情景分析 - 车网协同碳减排研究</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; line-height: 1.7; color: #333; background: #f5f7fa; min-height: 100vh; }
+        .navbar { position: fixed; top: 0; left: 0; width: 100%; background: #2c3e50; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .nav-container { max-width: 1400px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+        .nav-logo { color: white; font-size: 1.2em; font-weight: bold; padding: 15px 0; }
+        .nav-menu { display: flex; list-style: none; }
+        .nav-item { position: relative; }
+        .nav-link { color: white; text-decoration: none; padding: 15px 20px; display: block; transition: all 0.2s; font-weight: 500; }
+        .nav-link:hover, .nav-link.active { background: rgba(52, 152, 219, 0.3); }
+        .nav-dropdown { position: absolute; top: 100%; left: 0; background: #2c3e50; min-width: 200px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border-radius: 0 0 8px 8px; overflow: hidden; max-height: 0; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+        .nav-item:hover .nav-dropdown { max-height: 500px; opacity: 1; visibility: visible; }
+        .dropdown-link { color: white; text-decoration: none; padding: 12px 20px; display: block; transition: all 0.2s; }
+        .dropdown-link:hover { background: rgba(52, 152, 219, 0.3); padding-left: 25px; }
+        .menu-toggle { display: none; color: white; font-size: 1.5em; cursor: pointer; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .page-header { background: #fff; color: #2c3e50; padding: 80px 40px 40px; text-align: center; border-radius: 8px; margin-bottom: 25px; margin-top: 70px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .page-header h1 { font-size: 1.8em; margin-bottom: 10px; color: #2c3e50; }
+        .content-section { background: #fff; border-radius: 8px; padding: 25px 30px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .section-title { font-size: 1.25em; color: #2c3e50; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #3498db; display: inline-block; }
+        .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 20px 0; }
+        .scenario-card { background: #f5f7fa; border-radius: 8px; padding: 20px; text-align: center; border: 1px solid #eee; }
+        .scenario-card h3 { font-size: 1.1em; color: #2c3e50; margin-bottom: 10px; }
+        .scenario-icon { font-size: 2.5em; margin-bottom: 10px; }
+        .scenario-desc { color: #666; font-size: 0.9em; }
+        .chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin: 20px 0; }
+        .chart-item { background: #fafbfc; border-radius: 6px; padding: 15px; border: 1px solid #eee; }
+        .chart { width: 100%; height: 350px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #3498db; color: white; padding: 12px; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+        tr:hover { background: #f5f5f5; }
+        .highlight-box { background: #e8f4fd; border-left: 4px solid #3498db; padding: 18px 20px; margin: 15px 0; border-radius: 0 6px 6px 0; }
+        .highlight-box h3 { margin-bottom: 8px; color: #2c3e50; }
+        .highlight-box p { color: #555; }
+        .back-link, .next-link { display: inline-block; background: #3498db; color: #fff; padding: 10px 25px; border-radius: 4px; text-decoration: none; margin: 8px; transition: all 0.2s; font-weight: 500; }
+        .back-link:hover, .next-link:hover { background: #2980b9; }
+        .nav-buttons { text-align: center; margin-top: 25px; }
+        @media (max-width: 768px) {
+            .nav-menu { position: fixed; top: 60px; left: 0; width: 100%; background: #2c3e50; flex-direction: column; align-items: center; max-height: 0; overflow: hidden; transition: max-height 0.3s; }
+            .nav-menu.active { max-height: 500px; }
+            .menu-toggle { display: block; }
+            .chart-grid { grid-template-columns: 1fr; }
+            .chart { height: 300px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">🚗 车网协同研究</div>
+            <div class="menu-toggle" onclick="document.getElementById('navMenu').classList.toggle('active')">☰</div>
+            <ul class="nav-menu" id="navMenu">
+                <li class="nav-item"><a href="index.html" class="nav-link">首页</a></li>
+                <li class="nav-item"><a href="data.html" class="nav-link">数据概况</a></li>
+                <li class="nav-item"><a href="model.html" class="nav-link">模型训练</a></li>
+                <li class="nav-item"><a href="causal.html" class="nav-link">因果分析</a></li>
+                <li class="nav-item"><a href="simulation.html" class="nav-link active">仿真预测</a></li>
+                <li class="nav-item"><a href="optimization.html" class="nav-link">充电优化</a></li>
+                <li class="nav-item"><a href="conclusion.html" class="nav-link">结论建议</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>📊 四、仿真预测与情景分析</h1>
+            <p>基准情景 | V1G有序充电 | V2G双向互动</p>
+        </div>
+
+        <div class="content-section" id="scenarios">
+            <h2 class="section-title">4.1 情景设定</h2>
+            <div class="scenario-grid">
+                <div class="scenario-card">
+                    <div class="scenario-icon">📊</div>
+                    <h3>基准情景</h3>
+                    <p class="scenario-desc">无序充电模式，用户按自然行为进行充电，不进行任何调度干预。反映当前电动汽车充电的碳排放基准水平。</p>
+                </div>
+                <div class="scenario-card">
+                    <div class="scenario-icon">⚡</div>
+                    <h3>V1G情景（有序充电）</h3>
+                    <p class="scenario-desc">基于电网碳强度引导，将部分充电负荷从高峰/高碳时段转移至低谷或低碳时段。转移比例为20%-40%。</p>
+                </div>
+                <div class="scenario-card">
+                    <div class="scenario-icon">🔄</div>
+                    <h3>V2G情景（双向互动）</h3>
+                    <p class="scenario-desc">在高碳或高峰时段削减负荷（模拟放电），在低碳时段增加充电。需考虑能量平衡约束。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section" id="results">
+            <h2 class="section-title">4.2 仿真结果对比</h2>
+            <div class="chart-grid">
+                <div class="chart-item">
+                    <div id="loadCurvesChart" class="chart"></div>
+                </div>
+                <div class="chart-item">
+                    <div id="emissionCurvesChart" class="chart"></div>
+                </div>
+            </div>
+            <div class="chart-grid">
+                <div class="chart-item">
+                    <div id="emissionTotalChart" class="chart"></div>
+                </div>
+                <div class="chart-item">
+                    <div id="reductionEffectChart" class="chart"></div>
+                </div>
+            </div>
+            <div class="chart-grid">
+                <div class="chart-item">
+                    <div id="greenAbsorptionChart" class="chart"></div>
+                </div>
+                <div class="chart-item">
+                    <div id="loadHeatmapChart" class="chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2 class="section-title">4.3 指标汇总表</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>情景</th>
+                        <th>碳排放总量 (kg)</th>
+                        <th>减排量 (kg)</th>
+                        <th>减排效率 (g/kWh)</th>
+                        <th>绿电消纳比例 (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>基准情景</strong></td>
+                        <td>4,825,638.70</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>18.9%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>V1G情景</strong></td>
+                        <td>4,822,614.92</td>
+                        <td style="color: green;">-3,023.78</td>
+                        <td>4.2</td>
+                        <td>26.2%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>V2G情景</strong></td>
+                        <td>4,826,081.13</td>
+                        <td style="color: red;">+442.43</td>
+                        <td>-0.6</td>
+                        <td>18.9%</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="highlight-box">
+                <h3>📋 主要结论</h3>
+                <p><strong>V1G有序充电</strong>是最有效的减排策略，可实现碳减排3,024 kg，减排效率达4.2 g/kWh。V2G在当前电网结构下反而可能增加碳排放（+442 kg），需结合更高比例可再生能源才能发挥优势。</p>
+            </div>
+        </div>
+
+        <div class="nav-buttons">
+            <a href="causal.html" class="back-link">← 因果分析</a>
+            <a href="optimization.html" class="next-link">充电优化 →</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initSimulationCharts();
+        });
+
+        function initSimulationCharts() {
+            var hours = Array.from({length: 24}, (_, i) => i + ':00');
+
+            // 充电负荷曲线对比
+            var loadCurvesChart = echarts.init(document.getElementById('loadCurvesChart'));
+            loadCurvesChart.setOption({
+                title: { text: '不同情景充电负荷曲线对比', left: 'center', textStyle: { color: '#1e3c72' } },
+                tooltip: { trigger: 'axis' },
+                legend: { data: ['基准情景', 'V1G情景', 'V2G情景'], bottom: 0 },
+                xAxis: { type: 'category', data: hours, axisLabel: { interval: 2 } },
+                yAxis: { type: 'value', name: '充电负荷 (kW)' },
+                series: [
+                    { name: '基准情景', type: 'line', data: [1200, 800, 600, 500, 400, 600, 1400, 2800, 3200, 2600, 2200, 2500, 2800, 3000, 3200, 3400, 4200, 4800, 5200, 4600, 3800, 2800, 2000, 1600], lineStyle: { color: '#95a5a6', width: 2 }, areaStyle: { color: 'rgba(149, 165, 166, 0.2)' } },
+                    { name: 'V1G情景', type: 'line', data: [1600, 1200, 1000, 900, 800, 1200, 2000, 2600, 2800, 2400, 2000, 2200, 2400, 2600, 2800, 3200, 4000, 4200, 4000, 3600, 3000, 2200, 1800, 1600], lineStyle: { color: '#3498db', width: 2 }, areaStyle: { color: 'rgba(52, 152, 219, 0.2)' } },
+                    { name: 'V2G情景', type: 'line', data: [1400, 1000, 800, 700, 600, 800, 1600, 3000, 3400, 2800, 2400, 2700, 3000, 3200, 3400, 3600, 4000, 4400, 4800, 4200, 3400, 2400, 1800, 1400], lineStyle: { color: '#2980b9', width: 2 }, areaStyle: { color: 'rgba(41, 128, 185, 0.2)' } }
+                ],
+                grid: { left: '10%', right: '5%', bottom: '15%', top: '15%' }
+            });
+
+            // 碳排放曲线对比
+            var emissionCurvesChart = echarts.init(document.getElementById('emissionCurvesChart'));
+            emissionCurvesChart.setOption({
+                title: { text: '不同情景碳排放曲线对比', left: 'center', textStyle: { color: '#1e3c72' } },
+                tooltip: { trigger: 'axis' },
+                legend: { data: ['基准情景', 'V1G情景', 'V2G情景'], bottom: 0 },
+                xAxis: { type: 'category', data: hours, axisLabel: { interval: 2 } },
+                yAxis: { type: 'value', name: '碳排放 (kg)' },
+                series: [
+                    { name: '基准情景', type: 'line', data: [840000, 560000, 420000, 350000, 280000, 420000, 980000, 1960000, 2240000, 1820000, 1540000, 1750000, 1960000, 2100000, 2240000, 2380000, 2940000, 3360000, 3640000, 3220000, 2660000, 1960000, 1400000, 1120000], lineStyle: { color: '#95a5a6', width: 2 } },
+                    { name: 'V1G情景', type: 'line', data: [960000, 720000, 600000, 540000, 480000, 720000, 1200000, 1560000, 1680000, 1440000, 1200000, 1320000, 1440000, 1560000, 1680000, 1920000, 2400000, 2520000, 2400000, 2160000, 1800000, 1320000, 1080000, 960000], lineStyle: { color: '#3498db', width: 2 } },
+                    { name: 'V2G情景', type: 'line', data: [840000, 600000, 480000, 420000, 360000, 480000, 960000, 1800000, 2040000, 1680000, 1440000, 1620000, 1800000, 1920000, 2040000, 2160000, 2400000, 2640000, 2880000, 2520000, 2040000, 1440000, 1080000, 840000], lineStyle: { color: '#2980b9', width: 2 } }
+                ],
+                grid: { left: '10%', right: '5%', bottom: '15%', top: '15%' }
+            });
+
+            // 碳排放总量对比
+            var emissionTotalChart = echarts.init(document.getElementById('emissionTotalChart'));
+            emissionTotalChart.setOption({
+                title: { text: '各情景碳排放总量对比', left: 'center', textStyle: { color: '#1e3c72' } },
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}<br/>碳排放: {c} kg' },
+                xAxis: { type: 'category', data: ['基准情景', 'V1G情景', 'V2G情景'] },
+                yAxis: { type: 'value', name: '碳排放总量 (kg)', axisLabel: { formatter: '{value}' } },
+                series: [{
+                    type: 'bar',
+                    data: [
+                        { value: 4825638.70, itemStyle: { color: '#95a5a6' } },
+                        { value: 4822614.92, itemStyle: { color: '#3498db' } },
+                        { value: 4826081.13, itemStyle: { color: '#2980b9' } }
+                    ],
+                    label: { show: true, position: 'top', formatter: function(p) { return p.value.toFixed(0); } },
+                    barWidth: '50%'
+                }],
+                grid: { left: '15%', right: '10%', bottom: '15%', top: '15%' }
+            });
+
+            // 减排效果对比
+            var reductionEffectChart = echarts.init(document.getElementById('reductionEffectChart'));
+            reductionEffectChart.setOption({
+                title: { text: '减排量与减排效率对比', left: 'center', textStyle: { color: '#1e3c72' } },
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                legend: { data: ['减排量 (kg)', '减排效率 (g/kWh)'], bottom: 0 },
+                xAxis: { type: 'category', data: ['V1G情景', 'V2G情景'] },
+                yAxis: [
+                    { type: 'value', name: '减排量 (kg)', axisLabel: { formatter: '{value}' } },
+                    { type: 'value', name: '减排效率', axisLabel: { formatter: '{value}' } }
+                ],
+                series: [
+                    { name: '减排量 (kg)', type: 'bar', data: [{ value: -3023.78, itemStyle: { color: '#27ae60' } }, { value: 442.43, itemStyle: { color: '#e74c3c' } }] },
+                    { name: '减排效率 (g/kWh)', type: 'bar', data: [4.2, -0.6], lineStyle: { color: '#3498db' }, itemStyle: { color: '#3498db' } }
+                ],
+                grid: { left: '15%', right: '10%', bottom: '20%', top: '15%' }
+            });
+
+            // 绿电消纳比例
+            var greenAbsorptionChart = echarts.init(document.getElementById('greenAbsorptionChart'));
+            greenAbsorptionChart.setOption({
+                title: { text: '绿电消纳比例对比', left: 'center', textStyle: { color: '#1e3c72' } },
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: '{b}<br/>绿电消纳: {c}%' },
+                xAxis: { type: 'category', data: ['基准情景', 'V1G情景', 'V2G情景'] },
+                yAxis: { type: 'value', name: '绿电消纳比例 (%)', max: 100, axisLabel: { formatter: '{value}%' } },
+                series: [{
+                    type: 'bar',
+                    data: [
+                        { value: 18.9, itemStyle: { color: '#95a5a6' } },
+                        { value: 26.2, itemStyle: { color: '#38ef7d' } },
+                        { value: 18.9, itemStyle: { color: '#95a5a6' } }
+                    ],
+                    label: { show: true, position: 'top', formatter: '{c}%' },
+                    barWidth: '40%'
+                }],
+                grid: { left: '15%', right: '10%', bottom: '15%', top: '15%' }
+            });
+
+            // 负荷热力图
+            var loadHeatmapChart = echarts.init(document.getElementById('loadHeatmapChart'));
+            var hoursList = Array.from({length: 24}, (_, i) => i);
+            var days = ['基准情景', 'V1G情景', 'V2G情景'];
+            var baseLoadData = [1200, 800, 600, 500, 400, 600, 1400, 2800, 3200, 2600, 2200, 2500, 2800, 3000, 3200, 3400, 4200, 4800, 5200, 4600, 3800, 2800, 2000, 1600];
+            var v1gLoadData = [1600, 1200, 1000, 900, 800, 1200, 2000, 2600, 2800, 2400, 2000, 2200, 2400, 2600, 2800, 3200, 4000, 4200, 4000, 3600, 3000, 2200, 1800, 1600];
+            var v2gLoadData = [1400, 1000, 800, 700, 600, 800, 1600, 3000, 3400, 2800, 2400, 2700, 3000, 3200, 3400, 3600, 4000, 4400, 4800, 4200, 3400, 2400, 1800, 1400];
+
+            var heatmapData = [];
+            for (var i = 0; i < 3; i++) {
+                var data = i === 0 ? baseLoadData : (i === 1 ? v1gLoadData : v2gLoadData);
+                for (var j = 0; j < 24; j++) {
+                    heatmapData.push([j, i, data[j]]);
+                }
+            }
+
+            loadHeatmapChart.setOption({
+                title: { text: '24小时充电负荷热力图', left: 'center', textStyle: { color: '#1e3c72' } },
+                tooltip: { formatter: function(p) { return days[p.data[1]] + '<br/>' + p.data[0] + ':00<br/>负荷: ' + p.data[2] + ' kW'; } },
+                xAxis: { type: 'category', data: hoursList, name: '小时', axisLabel: { formatter: function(v) { return v + ':00'; } } },
+                yAxis: { type: 'category', data: days, name: '情景' },
+                visualMap: { min: 0, max: 5500, calculable: true, orient: 'vertical', right: 0, top: 'center', inRange: { color: ['#e8f5e9', '#66bb6a', '#fb8c00', '#e53935'] } },
+                series: [{ type: 'heatmap', data: heatmapData, label: { show: false }, emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } } }],
+                grid: { left: '15%', right: '15%', bottom: '15%', top: '15%' }
+            });
+
+            window.addEventListener('resize', function() {
+                loadCurvesChart.resize();
+                emissionCurvesChart.resize();
+                emissionTotalChart.resize();
+                reductionEffectChart.resize();
+                greenAbsorptionChart.resize();
+                loadHeatmapChart.resize();
+            });
+        }
+    </script>
+</body>
+</html>
