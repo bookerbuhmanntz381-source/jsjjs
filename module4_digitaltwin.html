@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字孪生能源系统 - 车网协同低碳研究</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #0a0e17 0%, #1a1f35 100%);
+            color: #e0e6ed;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        .header {
+            background: rgba(10, 14, 23, 0.95);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-title { font-size: 1.3em; font-weight: 600; background: linear-gradient(90deg, #00d4ff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { color: #7a8fa6; text-decoration: none; font-size: 0.9em; transition: color 0.3s; }
+        .nav-links a:hover { color: #00d4ff; }
+        .main-container { display: grid; grid-template-columns: 300px 1fr 380px; gap: 12px; padding: 12px; height: calc(100vh - 60px); }
+        .control-panel { background: rgba(15, 20, 35, 0.9); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 12px; padding: 14px; overflow-y: auto; }
+        .mode-selector { display: flex; gap: 6px; margin-bottom: 14px; }
+        .mode-btn { flex: 1; padding: 8px 6px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.8em; font-weight: 600; transition: all 0.3s; background: rgba(255,255,255,0.05); color: #7a8fa6; }
+        .mode-btn.active { background: linear-gradient(135deg, #00d4ff, #00ff88); color: #0a0e17; }
+        .mode-btn.v2g { background: rgba(168,85,247,0.2); color: #a855f7; }
+        .mode-btn.v2g.active { background: linear-gradient(135deg, #a855f7, #6366f1); color: white; }
+        .mode-desc { font-size: 0.75em; color: #7a8fa6; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; margin-bottom: 14px; line-height: 1.5; }
+        .mode-desc .highlight { color: #00ff88; font-weight: 600; }
+        .mode-desc .v2g-note { color: #a855f7; }
+        .param-group { margin-bottom: 12px; }
+        .param-label { display: flex; justify-content: space-between; font-size: 0.75em; margin-bottom: 4px; color: #94a3b8; }
+        .param-value { color: #00d4ff; font-weight: 600; }
+        .slider { width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.1); outline: none; -webkit-appearance: none; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: linear-gradient(135deg, #00d4ff, #00ff88); cursor: pointer; box-shadow: 0 0 8px rgba(0,212,255,0.5); }
+        .stats-panel { background: rgba(10, 14, 23, 0.95); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; }
+        .stats-title { font-size: 0.85em; color: #00d4ff; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(0,212,255,0.2); }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .stat-card { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 8px; text-align: center; }
+        .stat-card .value { font-size: 1.1em; font-weight: 700; color: #00ff88; }
+        .stat-card .label { font-size: 0.65em; color: #7a8fa6; margin-top: 2px; }
+        .stat-card.carbon .value { color: #ff6b6b; }
+        .stat-card.peak .value { color: #fbbf24; }
+        .chart-container { flex: 1; min-height: 0; }
+        .canvas-container { position: relative; background: rgba(10, 14, 23, 0.95); border: 1px solid rgba(0, 212, 255, 0.2); border-radius: 12px; overflow: hidden; flex: 1; min-height: 0; }
+        #energySvg { width: 100%; height: 100%; }
+        .node-group { cursor: pointer; }
+        .node-circle { filter: drop-shadow(0 0 15px currentColor); }
+        .node-text { font-size: 11px; fill: #94a3b8; text-anchor: middle; }
+        .flow-line { stroke-width: 3; stroke-linecap: round; }
+        .flow-arrow { fill: currentColor; }
+        .flow-glow { filter: drop-shadow(0 0 8px currentColor); }
+        @keyframes flowAnimation { 0% { stroke-dashoffset: 20; } 100% { stroke-dashoffset: 0; } }
+        .flow-animate { stroke-dasharray: 10 5; animation: flowAnimation 1s linear infinite; }
+        .canvas-overlay { position: absolute; top: 10px; left: 10px; z-index: 100; }
+        .time-display { background: rgba(0,0,0,0.7); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(0,212,255,0.3); }
+        .time-display .time { font-size: 1.3em; font-weight: 700; color: #00d4ff; }
+        .time-display .date { font-size: 0.65em; color: #7a8fa6; }
+        .playback-controls { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; background: rgba(0,0,0,0.7); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(0,212,255,0.3); z-index: 100; }
+        .playback-btn { width: 32px; height: 32px; border: none; border-radius: 50%; background: rgba(0,212,255,0.2); color: #00d4ff; cursor: pointer; font-size: 0.9em; transition: all 0.2s; }
+        .playback-btn:hover { background: rgba(0,212,255,0.4); }
+        .playback-btn.active { background: linear-gradient(135deg, #00d4ff, #00ff88); color: #0a0e17; }
+        .speed-indicator { display: flex; align-items: center; padding: 0 10px; font-size: 0.75em; color: #7a8fa6; }
+        .legend-panel { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(0,212,255,0.2); z-index: 100; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.7em; margin-bottom: 3px; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+        .legend-dot.green { background: #00ff88; color: #00ff88; }
+        .legend-dot.orange { background: #ff9500; color: #ff9500; }
+        .legend-dot.red { background: #ff4757; color: #ff4757; }
+        .legend-dot.cyan { background: #00d4ff; color: #00d4ff; }
+        .legend-dot.purple { background: #a855f7; color: #a855f7; }
+        .legend-dot.gray { background: #95a5a6; color: #95a5a6; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-title">🔋 数字孪生能源系统 - 车网协同低碳研究</div>
+        <nav class="nav-links">
+            <a href="dashboard.html">返回首页</a>
+            <a href="module2_advisor.html">AI充电顾问</a>
+            <a href="module3_whatif.html">What-If分析</a>
+        </nav>
+    </header>
+
+    <div class="main-container">
+        <div class="control-panel">
+            <div class="mode-selector">
+                <button class="mode-btn" onclick="setMode('baseline')">Baseline</button>
+                <button class="mode-btn active" onclick="setMode('v1g')">V1G有序</button>
+                <button class="mode-btn v2g" onclick="setMode('v2g')">V2G扩展</button>
+            </div>
+            <div class="mode-desc" id="modeDesc">
+                <span class="highlight">V1G有序充电（研究核心）</span>：智能调度中心将晚高峰充电需求迁移至深夜低谷时段，实现削峰填谷、绿电消纳提升和碳减排。
+            </div>
+            <div class="param-group">
+                <div class="param-label"><span>车辆规模</span><span class="param-value" id="evCount">1000辆</span></div>
+                <input type="range" class="slider" id="evSlider" min="500" max="3000" value="1000" oninput="updateParams()">
+            </div>
+            <div class="param-group">
+                <div class="param-label"><span>V1G参与率</span><span class="param-value" id="v1gRate">60%</span></div>
+                <input type="range" class="slider" id="v1gSlider" min="0" max="100" value="60" oninput="updateParams()">
+            </div>
+            <div class="param-group">
+                <div class="param-label"><span>绿电比例</span><span class="param-value" id="greenRate">40%</span></div>
+                <input type="range" class="slider" id="greenSlider" min="10" max="80" value="40" oninput="updateParams()">
+            </div>
+            <div class="param-group">
+                <div class="param-label"><span>电网碳强度</span><span class="param-value" id="carbonInt">600g/kWh</span></div>
+                <input type="range" class="slider" id="carbonSlider" min="400" max="800" value="600" oninput="updateParams()">
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <svg id="energySvg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#00ff88"/>
+                    </marker>
+                    <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#ff9500"/>
+                    </marker>
+                    <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#ff4757"/>
+                    </marker>
+                    <marker id="arrowCyan" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#00d4ff"/>
+                    </marker>
+                    <marker id="arrowGray" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#95a5a6"/>
+                    </marker>
+                    <marker id="arrowPurple" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#a855f7"/>
+                    </marker>
+                </defs>
+                
+                <g class="node-group" transform="translate(100, 150)">
+                    <circle class="node-circle" cx="0" cy="0" r="35" fill="url(#solarGradient)" color="#ffd700"/>
+                    <text class="node-text" y="50">光伏</text>
+                    <radialGradient id="solarGradient">
+                        <stop offset="0%" stop-color="#ffd700"/>
+                        <stop offset="100%" stop-color="#ff8c00"/>
+                    </radialGradient>
+                </g>
+                
+                <g class="node-group" transform="translate(100, 320)">
+                    <circle class="node-circle" cx="0" cy="0" r="35" fill="url(#windGradient)" color="#87ceeb"/>
+                    <text class="node-text" y="50">风电</text>
+                    <radialGradient id="windGradient">
+                        <stop offset="0%" stop-color="#87ceeb"/>
+                        <stop offset="100%" stop-color="#4169e1"/>
+                    </radialGradient>
+                </g>
+                
+                <g class="node-group" transform="translate(700, 280)">
+                    <circle class="node-circle" cx="0" cy="0" r="40" fill="url(#gridGradient)" color="#95a5a6"/>
+                    <text class="node-text" y="55">电网</text>
+                    <radialGradient id="gridGradient">
+                        <stop offset="0%" stop-color="#95a5a6"/>
+                        <stop offset="100%" stop-color="#636e72"/>
+                    </radialGradient>
+                </g>
+                
+                <g class="node-group" transform="translate(400, 180)">
+                    <circle class="node-circle" cx="0" cy="0" r="45" fill="url(#dispatchGradient)" color="#00d4ff"/>
+                    <text class="node-text" y="60">调度中心</text>
+                    <radialGradient id="dispatchGradient">
+                        <stop offset="0%" stop-color="#00d4ff"/>
+                        <stop offset="100%" stop-color="#0099cc"/>
+                    </radialGradient>
+                </g>
+                
+                <g class="node-group" transform="translate(400, 400)">
+                    <circle class="node-circle" cx="0" cy="0" r="40" fill="url(#stationGradient)" color="#ff9500"/>
+                    <text class="node-text" y="55">充电站</text>
+                    <radialGradient id="stationGradient">
+                        <stop offset="0%" stop-color="#ff9500"/>
+                        <stop offset="100%" stop-color="#ff6b35"/>
+                    </radialGradient>
+                </g>
+                
+                <g class="node-group" transform="translate(400, 550)">
+                    <circle class="node-circle" cx="0" cy="0" r="30" fill="url(#evGradient)" color="#00ff88"/>
+                    <text class="node-text" y="45">电动汽车</text>
+                    <radialGradient id="evGradient">
+                        <stop offset="0%" stop-color="#00d4ff"/>
+                        <stop offset="100%" stop-color="#00ff88"/>
+                    </radialGradient>
+                </g>
+                
+                <line id="lineSolar" x1="135" y1="150" x2="355" y2="180" class="flow-line flow-animate" stroke="#00ff88" marker-end="url(#arrowGreen)" opacity="0.8"/>
+                <line id="lineWind" x1="135" y1="320" x2="355" y2="180" class="flow-line flow-animate" stroke="#00ff88" marker-end="url(#arrowGreen)" opacity="0.8"/>
+                <line id="lineGrid" x1="660" y1="280" x2="445" y2="180" class="flow-line flow-animate" stroke="#95a5a6" marker-end="url(#arrowGray)" opacity="0.8"/>
+                <line id="lineDispatch" x1="400" y1="225" x2="400" y2="360" class="flow-line flow-animate" stroke="#ff9500" marker-end="url(#arrowOrange)" opacity="0.8"/>
+                <line id="lineStation" x1="400" y1="440" x2="400" y2="520" class="flow-line flow-animate" stroke="#00d4ff" marker-end="url(#arrowCyan)" opacity="0.8"/>
+                <line id="lineCarbon" x1="660" y1="280" x2="440" y2="400" class="flow-line flow-animate" stroke="#ff4757" marker-end="url(#arrowRed)" opacity="0.6"/>
+                <line id="lineV2G" x1="400" y1="360" x2="460" y2="320" class="flow-line flow-animate" stroke="#a855f7" marker-end="url(#arrowPurple)" opacity="0"/>
+            </svg>
+
+            <div class="canvas-overlay">
+                <div class="time-display"><div class="time" id="simTime">00:00</div><div class="date">仿真时间</div></div>
+            </div>
+            <div class="legend-panel">
+                <div class="legend-item"><div class="legend-dot green"></div>绿电流动</div>
+                <div class="legend-item"><div class="legend-dot orange"></div>充电负荷</div>
+                <div class="legend-item"><div class="legend-dot red"></div>碳排放流</div>
+                <div class="legend-item"><div class="legend-dot cyan"></div>EV能量</div>
+                <div class="legend-item"><div class="legend-dot purple"></div>V2G回馈</div>
+            </div>
+            <div class="playback-controls">
+                <button class="playback-btn" onclick="togglePlay()" id="playBtn">⏸</button>
+                <button class="playback-btn" onclick="setSpeed(0.5)">0.5x</button>
+                <button class="playback-btn active" onclick="setSpeed(1)">1x</button>
+                <button class="playback-btn" onclick="setSpeed(2)">2x</button>
+                <button class="playback-btn" onclick="setSpeed(4)">4x</button>
+                <div class="speed-indicator">速度: <span id="speedDisplay">1x</span></div>
+            </div>
+        </div>
+
+        <div class="stats-panel">
+            <div class="stats-title">📈 实时数据分析</div>
+            <div class="stat-grid">
+                <div class="stat-card"><div class="value" id="totalLoad">0kW</div><div class="label">系统负荷</div></div>
+                <div class="stat-card"><div class="value" id="greenPower">0kW</div><div class="label">绿电出力</div></div>
+                <div class="stat-card"><div class="value" id="evCharging">0kW</div><div class="label">EV充电</div></div>
+                <div class="stat-card carbon"><div class="value" id="carbonEmission">0kg</div><div class="label">碳排放</div></div>
+            </div>
+            <div class="chart-container"><div id="mainChart" style="width:100%;height:100%;"></div></div>
+            <div style="margin-top:8px;">
+                <div class="stats-title">🔄 模式对比</div>
+                <div class="stat-grid">
+                    <div class="stat-card peak"><div class="value" id="baselinePeak">0kW</div><div class="label">Baseline峰值</div></div>
+                    <div class="stat-card"><div class="value" id="v1gPeak">0kW</div><div class="label">V1G峰值</div></div>
+                    <div class="stat-card"><div class="value" id="peakValleyRate">0%</div><div class="label">峰谷差率</div></div>
+                    <div class="stat-card carbon"><div class="value" id="carbonReduction">0%</div><div class="label">碳减排率</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script>
+        var currentMode = 'v1g';
+        var isPlaying = true;
+        var speed = 1;
+        var currentHour = 0;
+
+        var evCount = 1000;
+        var v1gRate = 60;
+        var greenRate = 40;
+        var carbonIntensity = 600;
+
+        var loadProfile = [0.4, 0.3, 0.25, 0.2, 0.2, 0.25, 0.5, 0.8, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.3, 3.0, 3.5, 3.2, 2.5, 1.8, 1.2, 0.7];
+        var solarProfile = [0, 0, 0, 0, 0, 0, 0.1, 0.3, 0.6, 0.8, 0.95, 1.0, 0.95, 0.8, 0.6, 0.4, 0.2, 0.05, 0, 0, 0, 0, 0, 0];
+        var windProfile = [0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.55, 0.5, 0.4, 0.35, 0.3];
+        var carbonProfile = [0.7, 0.75, 0.8, 0.85, 0.9, 0.85, 0.75, 0.65, 0.55, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.9, 1.0, 1.1, 1.05, 0.9, 0.8, 0.7, 0.65];
+
+        var baselineLoad = [];
+        var v1gLoad = [];
+        var carbonEmissions = [];
+
+        var chart = null;
+
+        function initChart() {
+            var chartDom = document.getElementById('mainChart');
+            chart = echarts.init(chartDom);
+            updateChart();
+        }
+
+        function updateChart() {
+            var hours = [];
+            for (var i = 0; i < 24; i++) hours.push(i + ':00');
+
+            var baselineData = baselineLoad.length ? baselineLoad : loadProfile.map(function(v) { return Math.round(v * evCount * 3); });
+            var v1gData = v1gLoad.length ? v1gLoad : baselineData;
+            var greenData = solarProfile.map(function(s, i) { return Math.round((s * 5000 + windProfile[i] * 2000) * greenRate / 100); });
+            var carbonData = carbonProfile.map(function(c) { return Math.round(c * carbonIntensity); });
+
+            chart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(10, 14, 23, 0.95)', borderColor: 'rgba(0, 212, 255, 0.3)', textStyle: { color: '#e0e6ed', fontSize: 10 } },
+                legend: { data: ['Baseline负荷', 'V1G负荷', '绿电出力', '碳强度'], textStyle: { color: '#7a8fa6', fontSize: 9 }, top: 5 },
+                grid: { left: 35, right: 12, top: 30, bottom: 25 },
+                xAxis: { type: 'category', data: hours, axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.3)' } }, axisLabel: { color: '#7a8fa6', fontSize: 8 } },
+                yAxis: [
+                    { type: 'value', name: 'kW', axisLine: { lineStyle: { color: 'rgba(0, 212, 255, 0.3)' } }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }, axisLabel: { color: '#7a8fa6', fontSize: 8 } },
+                    { type: 'value', name: 'g/kWh', axisLine: { lineStyle: { color: 'rgba(255, 71, 87, 0.3)' } }, splitLine: { show: false }, axisLabel: { color: '#7a8fa6', fontSize: 8 } }
+                ],
+                series: [
+                    { name: 'Baseline负荷', type: 'line', data: baselineData, smooth: true, lineStyle: { color: '#ff6b6b', width: 2 }, itemStyle: { color: '#ff6b6b' }, areaStyle: { color: 'rgba(255, 107, 107, 0.1)' } },
+                    { name: 'V1G负荷', type: 'line', data: v1gData, smooth: true, lineStyle: { color: '#00ff88', width: 2 }, itemStyle: { color: '#00ff88' } },
+                    { name: '绿电出力', type: 'bar', data: greenData, itemStyle: { color: 'rgba(0, 255, 136, 0.5)' } },
+                    { name: '碳强度', type: 'line', yAxisIndex: 1, data: carbonData, smooth: true, lineStyle: { color: '#ff4757', width: 1, type: 'dashed' }, itemStyle: { color: '#ff4757' } }
+                ]
+            });
+        }
+
+        function calculateProfiles() {
+            baselineLoad = [];
+            v1gLoad = [];
+            carbonEmissions = [];
+
+            var greenRatio = greenRate / 100;
+
+            for (var h = 0; h < 24; h++) {
+                var baseLoad = loadProfile[h] * evCount * 3;
+                var solar = solarProfile[h] * 5000 * greenRatio;
+                var wind = windProfile[h] * 2000 * greenRatio;
+                var greenPower = solar + wind;
+                var carbon = carbonProfile[h] * carbonIntensity;
+
+                var baseline = Math.round(baseLoad);
+                baselineLoad.push(baseline);
+
+                var v1gLoadHour = baseline;
+                if (currentMode === 'v1g' || currentMode === 'v2g') {
+                    var ratio = v1gRate / 100;
+                    if (h >= 18 && h <= 22) {
+                        v1gLoadHour = Math.round(baseLoad * (1 - ratio * 0.7));
+                    } else if (h >= 23 || h <= 6) {
+                        v1gLoadHour = Math.round(baseLoad * (1 + ratio * 0.3));
+                    } else {
+                        v1gLoadHour = Math.round(baseLoad * 0.9);
+                    }
+                }
+                v1gLoad.push(v1gLoadHour);
+
+                var greenUsed = Math.min(greenPower, v1gLoadHour);
+                var carbonHour = Math.round((v1gLoadHour - greenUsed) * carbon / 1000);
+                carbonEmissions.push(Math.max(0, carbonHour));
+            }
+
+            updateStats();
+            updateChart();
+        }
+
+        function updateStats() {
+            var h = Math.floor(currentHour) % 24;
+            var load = currentMode === 'baseline' ? baselineLoad[h] : v1gLoad[h];
+            var solar = solarProfile[h] * 5000 * greenRate / 100;
+            var wind = windProfile[h] * 2000 * greenRate / 100;
+            var green = Math.round(solar + wind);
+
+            document.getElementById('totalLoad').textContent = load + 'kW';
+            document.getElementById('greenPower').textContent = green + 'kW';
+            document.getElementById('evCharging').textContent = load + 'kW';
+            document.getElementById('carbonEmission').textContent = carbonEmissions[h] + 'kg';
+
+            var baselinePeak = Math.max.apply(null, baselineLoad);
+            var v1gPeak = Math.max.apply(null, v1gLoad);
+            document.getElementById('baselinePeak').textContent = baselinePeak + 'kW';
+            document.getElementById('v1gPeak').textContent = v1gPeak + 'kW';
+
+            document.getElementById('peakValleyRate').textContent = ((1 - v1gPeak / baselinePeak) * 100).toFixed(1) + '%';
+            document.getElementById('carbonReduction').textContent = ((1 - carbonEmissions[h] / (baselineLoad[h] * carbonProfile[h] * carbonIntensity / 1000)) * 100).toFixed(1) + '%';
+
+            updateFlowVisibility(h);
+        }
+
+        function updateFlowVisibility(h) {
+            var solar = solarProfile[h] * 5000 * greenRate / 100;
+            var wind = windProfile[h] * 2000 * greenRate / 100;
+            var load = currentMode === 'baseline' ? baselineLoad[h] : v1gLoad[h];
+            var carbon = carbonEmissions[h];
+
+            document.getElementById('lineSolar').style.opacity = Math.min(1, 0.3 + solar / 2000);
+            document.getElementById('lineWind').style.opacity = Math.min(1, 0.3 + wind / 1000);
+            document.getElementById('lineGrid').style.opacity = Math.min(1, 0.3 + load / 5000);
+            document.getElementById('lineDispatch').style.opacity = Math.min(1, 0.3 + load / 4000);
+            document.getElementById('lineStation').style.opacity = Math.min(1, 0.3 + load / 4000);
+            document.getElementById('lineCarbon').style.opacity = Math.min(0.8, carbon / 500);
+
+            if (currentMode === 'v2g' && h >= 18 && h <= 22) {
+                document.getElementById('lineV2G').style.opacity = Math.min(0.8, load / 8000);
+            } else {
+                document.getElementById('lineV2G').style.opacity = 0;
+            }
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(function(btn) { btn.classList.remove('active'); });
+            event.target.classList.add('active');
+
+            var desc = document.getElementById('modeDesc');
+            if (mode === 'baseline') {
+                desc.innerHTML = '<span class="highlight">Baseline无序充电</span>：模拟晚高峰集中充电场景，展示电网负荷快速攀升、碳强度增加的负面影响。';
+            } else if (mode === 'v1g') {
+                desc.innerHTML = '<span class="highlight">V1G有序充电（研究核心）</span>：智能调度中心将晚高峰充电需求迁移至深夜低谷时段，实现削峰填谷、绿电消纳提升和碳减排。';
+            } else {
+                desc.innerHTML = '<span class="v2g-note">V2G车网互动（探索性场景）</span>：展示双向能量流动，当前研究数据显示其减排效果未优于V1G。';
+            }
+
+            calculateProfiles();
+        }
+
+        function updateParams() {
+            evCount = parseInt(document.getElementById('evSlider').value);
+            v1gRate = parseInt(document.getElementById('v1gSlider').value);
+            greenRate = parseInt(document.getElementById('greenSlider').value);
+            carbonIntensity = parseInt(document.getElementById('carbonSlider').value);
+
+            document.getElementById('evCount').textContent = evCount + '辆';
+            document.getElementById('v1gRate').textContent = v1gRate + '%';
+            document.getElementById('greenRate').textContent = greenRate + '%';
+            document.getElementById('carbonInt').textContent = carbonIntensity + 'g/kWh';
+
+            calculateProfiles();
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            document.getElementById('playBtn').textContent = isPlaying ? '⏸' : '▶';
+        }
+
+        function setSpeed(s) {
+            speed = s;
+            document.getElementById('speedDisplay').textContent = s + 'x';
+            document.querySelectorAll('.playback-btn').forEach(function(btn) { btn.classList.remove('active'); });
+            event.target.classList.add('active');
+        }
+
+        function animate() {
+            if (isPlaying) {
+                currentHour = (currentHour + 0.05 * speed) % 24;
+                document.getElementById('simTime').textContent = Math.floor(currentHour) + ':00';
+            }
+
+            updateStats();
+            setTimeout(animate, 300 / speed);
+        }
+
+        function init() {
+            calculateProfiles();
+            initChart();
+            animate();
+
+            window.addEventListener('resize', function() {
+                if (chart) chart.resize();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

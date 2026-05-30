@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模块二：AI低碳充电顾问</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #0a0e17 0%, #1a1f3a 50%, #0d1421 100%); min-height: 100vh; color: #e0e6ed; }
+        .header { background: linear-gradient(90deg, rgba(16,185,129,0.08) 0%, rgba(0,0,0,0.4) 50%, rgba(16,185,129,0.08) 100%); border-bottom: 1px solid rgba(16,185,129,0.2); padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; backdrop-filter: blur(15px); }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .back-btn { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #10b981; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-size: 0.85em; transition: all 0.2s; }
+        .back-btn:hover { background: rgba(16,185,129,0.2); }
+        .header-title { font-size: 1.1em; color: #e0e6ed; }
+        .main-container { padding: 75px 15px 15px; max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; height: calc(100vh - 90px); }
+        .chat-panel { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(16,185,129,0.02) 100%); border: 1px solid rgba(16,185,129,0.15); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; }
+        .chat-header { background: linear-gradient(90deg, rgba(16,185,129,0.1) 0%, transparent 100%); padding: 15px 20px; border-bottom: 1px solid rgba(16,185,129,0.15); display: flex; align-items: center; gap: 12px; }
+        .chat-avatar { width: 45px; height: 45px; background: linear-gradient(135deg, #10b981, #34d399); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .chat-info h3 { font-size: 1em; color: #e0e6ed; }
+        .chat-info p { font-size: 0.8em; color: #10b981; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; }
+        .message { margin-bottom: 20px; animation: messageIn 0.3s ease; }
+        @keyframes messageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message.bot { display: flex; gap: 12px; }
+        .message.user { justify-content: flex-end; }
+        .message-avatar { width: 35px; height: 35px; background: linear-gradient(135deg, #10b981, #34d399); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .message.user .message-avatar { background: linear-gradient(135deg, #00d4ff, #0099cc); }
+        .message-content { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.15); border-radius: 12px; padding: 12px 16px; max-width: 80%; }
+        .message.user .message-content { background: rgba(0,212,255,0.08); border-color: rgba(0,212,255,0.15); }
+        .message-text { font-size: 0.9em; line-height: 1.6; color: #e0e6ed; }
+        .message-time { font-size: 0.7em; color: #5a6a7a; margin-top: 6px; }
+        .input-panel { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(16,185,129,0.02) 100%); border: 1px solid rgba(16,185,129,0.15); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .input-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        .input-group label { font-size: 0.85em; color: #7a8fa6; display: flex; align-items: center; gap: 6px; }
+        .input-group input, .input-group select { background: rgba(0,0,0,0.3); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 10px 12px; color: #e0e6ed; font-size: 0.9em; transition: border-color 0.2s; }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: #10b981; }
+        .input-group select { cursor: pointer; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; }
+        .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: #10b981; cursor: pointer; }
+        .checkbox-group label { font-size: 0.9em; color: #e0e6ed; cursor: pointer; }
+        .calculate-btn { background: linear-gradient(135deg, #10b981, #34d399); border: none; border-radius: 10px; padding: 14px 25px; color: white; font-size: 1em; font-weight: 600; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .calculate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16,185,129,0.3); }
+        .calculate-btn:active { transform: translateY(0); }
+        .results-panel { background: rgba(0,0,0,0.3); border: 1px solid rgba(16,185,129,0.15); border-radius: 12px; padding: 15px; flex: 1; overflow-y: auto; }
+        .result-title { font-size: 0.95em; color: #10b981; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .result-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .result-item { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; text-align: center; }
+        .result-value { font-size: 1.4em; font-weight: bold; color: #10b981; }
+        .result-label { font-size: 0.75em; color: #7a8fa6; margin-top: 4px; }
+        .result-item.highlight { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); }
+        .suggestion-box { background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2); border-radius: 10px; padding: 15px; margin-top: 15px; }
+        .suggestion-title { font-size: 0.9em; color: #00d4ff; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .suggestion-text { font-size: 0.85em; color: #b0bec5; line-height: 1.6; }
+        @media (max-width: 900px) { .main-container { grid-template-columns: 1fr; height: auto; } .input-section { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <a href="dashboard.html" class="back-btn">← 返回主页</a>
+            <h1 class="header-title">🤖 模块二：AI低碳充电顾问</h1>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="chat-panel">
+            <div class="chat-header">
+                <div class="chat-avatar">🤖</div>
+                <div class="chat-info">
+                    <h3>AI充电优化顾问</h3>
+                    <p>● 在线 - 实时分析中</p>
+                </div>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <div class="message-text">您好！我是AI充电优化顾问。基于电网实时碳强度和您的充电需求，我会为您推荐最优的充电策略，实现低碳出行。</div>
+                        <div class="message-time" id="botTime"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-panel">
+            <h3 style="color: #10b981; font-size: 1.1em; margin-bottom: 5px;">📥 请输入充电参数</h3>
+            <div class="input-section">
+                <div class="input-group">
+                    <label>🔋 当前SOC (%)</label>
+                    <input type="number" id="currentSOC" value="35" min="0" max="100" oninput="updatePreview()">
+                </div>
+                <div class="input-group">
+                    <label>🎯 目标SOC (%)</label>
+                    <input type="number" id="targetSOC" value="90" min="0" max="100" oninput="updatePreview()">
+                </div>
+                <div class="input-group">
+                    <label>🕐 到达时间</label>
+                    <input type="time" id="arrivalTime" value="09:00" oninput="updatePreview()">
+                </div>
+                <div class="input-group">
+                    <label>🕐 离开时间</label>
+                    <input type="time" id="departureTime" value="18:00" oninput="updatePreview()">
+                </div>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="v2gAllowed">
+                <label for="v2gAllowed">⚡ 允许V2G双向互动（高峰时段可向电网回馈电能）</label>
+            </div>
+            <button class="calculate-btn" onclick="calculateStrategy()">
+                <span>🔍</span> 分析最优充电策略
+            </button>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <input type="text" id="freeInput" placeholder="直接输入问题咨询..." style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 10px 12px; color: #e0e6ed; font-size: 0.9em;" onkeypress="if(event.key==='Enter')sendFreeMessage()">
+                <button class="calculate-btn" style="padding: 10px 15px;" onclick="sendFreeMessage()">发送</button>
+            </div>
+            <div class="results-panel" id="resultsPanel">
+                <div class="result-title">📊 优化结果</div>
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="result-value" id="resultChargeTime">--</div>
+                        <div class="result-label">推荐充电时段</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-value" id="resultStrategy">--</div>
+                        <div class="result-label">充电策略</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-value" id="resultCost">--</div>
+                        <div class="result-label">预计电费 (元)</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-value" id="resultEmission">--</div>
+                        <div class="result-label">预计碳排放 (kg)</div>
+                    </div>
+                    <div class="result-item highlight">
+                        <div class="result-value" id="resultReduction">--</div>
+                        <div class="result-label">预计减排量 (kg)</div>
+                    </div>
+                    <div class="result-item highlight">
+                        <div class="result-value" id="resultScore">--</div>
+                        <div class="result-label">环保评分</div>
+                    </div>
+                </div>
+                <div class="suggestion-box" id="suggestionBox">
+                    <div class="suggestion-title">💡 优化建议</div>
+                    <div class="suggestion-text" id="suggestionText">请输入参数后点击"分析最优充电策略"获取推荐</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        var chatMessages = document.getElementById('chatMessages');
+        var currentCarbonIntensity = 680;
+        var currentGreenRate = 26.2;
+        var isUsingAI = true;
+        var conversationHistory = [];
+
+        var AI_CONFIG = {
+            apiKey: '224cb2f8848f4b978b8895f7f3b7093c.S2RnQSSVXIM4Vcbd',
+            baseURL: 'https://open.bigmodel.cn/api/paas/v4',
+            model: 'glm-4-flash'
+        };
+
+        function updateTime() {
+            var now = new Date();
+            document.getElementById('botTime').textContent = now.toLocaleTimeString();
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        function addMessage(text, isBot) {
+            var msg = document.createElement('div');
+            msg.className = 'message ' + (isBot ? 'bot' : 'user');
+            msg.innerHTML = '<div class="message-avatar">' + (isBot ? '🤖' : '👤') + '</div>' +
+                '<div class="message-content"><div class="message-text">' + text + '</div><div class="message-time">' + new Date().toLocaleTimeString() + '</div></div>';
+            chatMessages.appendChild(msg);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function callAI(userMessage) {
+            if (!isUsingAI) {
+                return simulateAIResponse(userMessage);
+            }
+
+            try {
+                var response = await fetch('http://localhost:3000/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: AI_CONFIG.model,
+                        messages: conversationHistory.concat([
+                            { role: 'user', content: userMessage }
+                        ]),
+                        temperature: 0.7,
+                        max_tokens: 500
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API调用失败');
+                }
+
+                var data = await response.json();
+                return data.choices[0].message.content;
+            } catch (error) {
+                console.log('AI API调用失败，使用模拟响应:', error.message);
+                return simulateAIResponse(userMessage);
+            }
+        }
+
+        function simulateAIResponse(userMessage) {
+            var currentSOC = parseInt(document.getElementById('currentSOC').value) || 0;
+            var targetSOC = parseInt(document.getElementById('targetSOC').value) || 100;
+            var arrival = document.getElementById('arrivalTime').value;
+            var departure = document.getElementById('departureTime').value;
+            var v2gAllowed = document.getElementById('v2gAllowed').checked;
+
+            var chargeNeeded = (targetSOC - currentSOC) * 0.6;
+            var arrivalHour = parseInt(arrival.split(':')[0]);
+            var departureHour = parseInt(departure.split(':')[0]);
+            var availableHours = departureHour - arrivalHour;
+            if (availableHours < 0) availableHours += 24;
+
+            var lowCarbonHours = [2, 3, 4, 5, 6, 1, 0, 23];
+            var recommendedHour = lowCarbonHours.find(function(h) { return h >= arrivalHour || h <= departureHour; }) || 3;
+
+            var strategy = v2gAllowed ? 'V2G智能调度模式' : 'V1G有序充电模式';
+            var baseCost = chargeNeeded * 0.8;
+            var cost = baseCost * (v2gAllowed ? 0.7 : 0.85);
+            var emission = chargeNeeded * (currentCarbonIntensity / 1000) * 0.9;
+            var reduction = chargeNeeded * (currentCarbonIntensity - 500) / 1000 * (v2gAllowed ? 1.2 : 1);
+
+            var responses = [
+                '根据您当前的情况分析，' + (v2gAllowed ? 'V2G模式' : 'V1G模式') + '非常适合您。预计在' + recommendedHour + ':00-' + (recommendedHour+2) + ':00时段充电最为经济环保。',
+                '您好！分析您的充电需求后，建议选择' + strategy + '。通过错峰充电，预计可节省' + (v2gAllowed ? '30%' : '15%') + '的电费支出。',
+                '从电网碳强度角度考虑，' + recommendedHour + '时至' + (recommendedHour+2) + '时是最佳的充电窗口。此时段绿电占比高，充电更低碳。',
+                '您的充电需求分析完成！采用' + (v2gAllowed ? 'V2G' : '有序充电') + '策略，预计可实现' + reduction.toFixed(1) + 'kg的碳减排。',
+                '基于当前电网运行状态，建议您在' + recommendedHour + '点左右开始充电。这个时段光伏发电充足，电网碳强度最低。'
+            ];
+
+            var randomIndex = Math.floor(Math.random() * responses.length);
+            var baseResponse = responses[randomIndex];
+
+            var detailedResponse = baseResponse + '\n\n📊 详细参数：\n' +
+                '- 当前SOC: ' + currentSOC + '% → 目标SOC: ' + targetSOC + '%\n' +
+                '- 需充电量: ' + chargeNeeded.toFixed(1) + ' kWh\n' +
+                '- 可用时间窗口: ' + availableHours + ' 小时\n' +
+                '- 预计电费: ¥' + cost.toFixed(2) + '\n' +
+                '- 预计碳排放: ' + emission.toFixed(2) + ' kg\n' +
+                '- 预计减排量: ' + reduction.toFixed(2) + ' kg';
+
+            if (userMessage.length > 20) {
+                detailedResponse += '\n\n💬 您问到的其他问题：建议您详细描述具体需求，我可以给出更精准的建议。';
+            }
+
+            return detailedResponse;
+        }
+
+        function parseUserInput(input) {
+            var socMatch = input.match(/SOC[：:]\s*(\d+)/i) || input.match(/电量[：:]\s*(\d+)/i) || input.match(/(\d+)%/);
+            var targetMatch = input.match(/目标[：:]\s*(\d+)/i) || input.match(/充到[：:]\s*(\d+)/i);
+            var timeMatch = input.match(/(\d{1,2}):(\d{2})/);
+            var v2gMatch = input.match(/V2G/i);
+
+            return {
+                soc: socMatch ? parseInt(socMatch[1]) : null,
+                target: targetMatch ? parseInt(targetMatch[1]) : null,
+                time: timeMatch ? timeMatch[0] : null,
+                v2g: v2gMatch ? true : null
+            };
+        }
+
+        async function sendFreeMessage() {
+            var freeInput = document.getElementById('freeInput');
+            var message = freeInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, false);
+            freeInput.value = '';
+
+            addMessage('🤔 正在思考，请稍候...', true);
+
+            conversationHistory.push({ role: 'user', content: message });
+
+            var aiResponse = await callAI(message);
+            conversationHistory.push({ role: 'assistant', content: aiResponse });
+
+            var lastMsg = chatMessages.lastElementChild;
+            if (lastMsg && lastMsg.classList.contains('bot')) {
+                lastMsg.querySelector('.message-text').textContent = aiResponse;
+            }
+        }
+
+        function updatePreview() {
+            var currentSOC = parseInt(document.getElementById('currentSOC').value) || 0;
+            var targetSOC = parseInt(document.getElementById('targetSOC').value) || 100;
+            var arrival = document.getElementById('arrivalTime').value;
+            var departure = document.getElementById('departureTime').value;
+        }
+
+        async function calculateStrategy() {
+            var currentSOC = parseInt(document.getElementById('currentSOC').value) || 0;
+            var targetSOC = parseInt(document.getElementById('targetSOC').value) || 100;
+            var arrival = document.getElementById('arrivalTime').value;
+            var departure = document.getElementById('departureTime').value;
+            var v2gAllowed = document.getElementById('v2gAllowed').checked;
+
+            if (currentSOC >= targetSOC) {
+                addMessage('⚠️ 当前SOC已达到目标SOC，无需充电！', true);
+                return;
+            }
+
+            var chargeNeeded = (targetSOC - currentSOC) * 0.6;
+            var arrivalHour = parseInt(arrival.split(':')[0]);
+            var departureHour = parseInt(departure.split(':')[0]);
+            var availableHours = departureHour - arrivalHour;
+            if (availableHours < 0) availableHours += 24;
+
+            var carbonHours = [];
+            for (var h = 0; h < 24; h++) {
+                var intensity = 500 + Math.sin(h / 24 * Math.PI * 2) * 200 + Math.random() * 50;
+                carbonHours.push({ hour: h, intensity: Math.round(intensity) });
+            }
+
+            var sortedHours = carbonHours.slice().sort(function(a, b) { return a.intensity - b.intensity; });
+            var recommendedHours = sortedHours.slice(0, Math.min(availableHours, 3)).map(function(h) { return h.hour; }).sort(function(a, b) { return a - b; });
+
+            var chargeTimeStr = recommendedHours.map(function(h) { return h + ':00'; }).join(', ');
+            var strategy = v2gAllowed ? 'V2G智能调度' : 'V1G有序充电';
+            var baseCost = chargeNeeded * 0.8;
+            var cost = baseCost * (v2gAllowed ? 0.7 : 0.85);
+            var emission = chargeNeeded * (currentCarbonIntensity / 1000) * 0.9;
+            var reduction = chargeNeeded * (currentCarbonIntensity - 500) / 1000 * (v2gAllowed ? 1.2 : 1);
+            var score = Math.round(60 + Math.random() * 30 + (v2gAllowed ? 10 : 0));
+
+            document.getElementById('resultChargeTime').textContent = chargeTimeStr || '暂无';
+            document.getElementById('resultStrategy').textContent = strategy;
+            document.getElementById('resultCost').textContent = cost.toFixed(2);
+            document.getElementById('resultEmission').textContent = emission.toFixed(2);
+            document.getElementById('resultReduction').textContent = reduction.toFixed(2);
+            document.getElementById('resultScore').textContent = score + '/100';
+
+            var suggestion = '基于当前电网碳强度分析，建议您在' + (recommendedHours[0] || '凌晨') + '时至' + (recommendedHours[recommendedHours.length - 1] || '早间') + '时进行充电。此时间段碳强度较低，可有效降低充电碳排放。';
+            if (v2gAllowed) {
+                suggestion += '由于您已启用V2G，系统会在高峰高碳时段自动调整放电策略，进一步提升减排效果。';
+            }
+            document.getElementById('suggestionText').textContent = suggestion;
+
+            var userInput = 'SOC: ' + currentSOC + '%→' + targetSOC + '%, 到达: ' + arrival + ', 离开: ' + departure + (v2gAllowed ? ', V2G已启用' : '');
+            addMessage(userInput, false);
+
+            var aiPrompt = '用户请求充电优化分析。当前SOC: ' + currentSOC + '%, 目标SOC: ' + targetSOC + '%, 到达时间: ' + arrival + ', 离开时间: ' + departure + ', V2G: ' + (v2gAllowed ? '启用' : '未启用') + '。请给出专业的低碳充电建议，包括最佳充电时段、策略选择、电费预估、碳排放和减排量分析。';
+            conversationHistory.push({ role: 'user', content: aiPrompt });
+
+            addMessage('🤔 正在分析您的充电需求，请稍候...', true);
+
+            var aiResponse = await callAI(aiPrompt);
+            conversationHistory.push({ role: 'assistant', content: aiResponse });
+
+            var lastMsg = chatMessages.lastElementChild;
+            if (lastMsg && lastMsg.classList.contains('bot')) {
+                lastMsg.querySelector('.message-text').textContent = aiResponse;
+            }
+        }
+
+        updatePreview();
+    </script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模块七：数据血缘分析中心</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #0a0e17 0%, #1a1f3a 50%, #0d1421 100%); min-height: 100vh; color: #e0e6ed; }
+        .header { background: linear-gradient(90deg, rgba(16,185,129,0.08) 0%, rgba(0,0,0,0.4) 50%, rgba(16,185,129,0.08) 100%); border-bottom: 1px solid rgba(16,185,129,0.2); padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; backdrop-filter: blur(15px); }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .back-btn { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: #10b981; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-size: 0.85em; }
+        .back-btn:hover { background: rgba(16,185,129,0.2); }
+        .header-title { font-size: 1.1em; color: #e0e6ed; }
+        .main-container { padding: 75px 15px 15px; max-width: 1920px; margin: 0 auto; }
+        .pipeline-flow { display: flex; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 25px; }
+        .pipeline-node { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(16,185,129,0.05) 100%); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px; padding: 18px 22px; cursor: pointer; transition: all 0.3s; min-width: 140px; text-align: center; }
+        .pipeline-node:hover { border-color: #10b981; transform: translateY(-3px); box-shadow: 0 8px 25px rgba(16,185,129,0.2); }
+        .pipeline-node.selected { border-color: #10b981; background: rgba(16,185,129,0.15); }
+        .pipeline-icon { font-size: 28px; margin-bottom: 8px; }
+        .pipeline-name { font-size: 0.9em; color: #e0e6ed; font-weight: 600; margin-bottom: 4px; }
+        .pipeline-count { font-size: 0.75em; color: #10b981; }
+        .pipeline-arrow { color: rgba(16,185,129,0.4); font-size: 24px; }
+        .detail-panel { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(16,185,129,0.02) 100%); border: 1px solid rgba(16,185,129,0.15); border-radius: 12px; padding: 20px; margin-bottom: 15px; }
+        .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .detail-title { font-size: 1.1em; color: #10b981; display: flex; align-items: center; gap: 10px; }
+        .detail-content { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .detail-card { background: rgba(0,0,0,0.2); border-radius: 10px; padding: 15px; }
+        .detail-card-title { font-size: 0.85em; color: #7a8fa6; margin-bottom: 8px; }
+        .detail-card-value { font-size: 1.1em; color: #e0e6ed; font-weight: 600; }
+        .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .panel { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(16,185,129,0.02) 100%); border: 1px solid rgba(16,185,129,0.12); border-radius: 12px; overflow: hidden; }
+        .panel-header { background: linear-gradient(90deg, rgba(16,185,129,0.08) 0%, transparent 100%); padding: 12px 18px; border-bottom: 1px solid rgba(16,185,129,0.1); display: flex; align-items: center; gap: 10px; }
+        .panel-header-icon { font-size: 1.1em; }
+        .panel-header-title { font-size: 0.95em; color: #e0e6ed; font-weight: 600; }
+        .panel-body { padding: 15px; }
+        .chart { width: 100%; height: 280px; }
+        .node-description { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px; margin-top: 15px; font-size: 0.85em; color: #b0bec5; line-height: 1.6; }
+        @media (max-width: 1200px) { .content-grid { grid-template-columns: 1fr; } .detail-content { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <a href="dashboard.html" class="back-btn">← 返回主页</a>
+            <h1 class="header-title">🔄 模块七：数据血缘分析中心</h1>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="pipeline-flow">
+            <div class="pipeline-node" onclick="selectNode('raw')">
+                <div class="pipeline-icon">📥</div>
+                <div class="pipeline-name">原始数据</div>
+                <div class="pipeline-count">58,240 条</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-node" onclick="selectNode('clean')">
+                <div class="pipeline-icon">🧹</div>
+                <div class="pipeline-name">数据清洗</div>
+                <div class="pipeline-count">52,180 条</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-node" onclick="selectNode('align')">
+                <div class="pipeline-icon">⏱️</div>
+                <div class="pipeline-name">时间对齐</div>
+                <div class="pipeline-count">52,180 条</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-node" onclick="selectNode('feature')">
+                <div class="pipeline-icon">🔧</div>
+                <div class="pipeline-name">特征工程</div>
+                <div class="pipeline-count">48 项</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-node" onclick="selectNode('model')">
+                <div class="pipeline-icon">🤖</div>
+                <div class="pipeline-name">模型训练</div>
+                <div class="pipeline-count">3 个模型</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-node" onclick="selectNode('shap')">
+                <div class="pipeline-icon">🧠</div>
+                <div class="pipeline-name">SHAP分析</div>
+                <div class="pipeline-count">6 特征</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-node" onclick="selectNode('causal')">
+                <div class="pipeline-icon">🔗</div>
+                <div class="pipeline-name">因果分析</div>
+                <div class="pipeline-count">7 变量</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-node" onclick="selectNode('sim')">
+                <div class="pipeline-icon">📊</div>
+                <div class="pipeline-name">仿真预测</div>
+                <div class="pipeline-count">365 天</div>
+            </div>
+            <div class="pipeline-arrow">→</div>
+            <div class="pipeline-node" onclick="selectNode('result')">
+                <div class="pipeline-icon">🌱</div>
+                <div class="pipeline-name">减排结果</div>
+                <div class="pipeline-count">3,024 kg</div>
+            </div>
+        </div>
+
+        <div class="detail-panel" id="detailPanel">
+            <div class="detail-header">
+                <div class="detail-title">📋 节点详情</div>
+            </div>
+            <div class="detail-content">
+                <div class="detail-card">
+                    <div class="detail-card-title">数据来源</div>
+                    <div class="detail-card-value" id="detailSource">--</div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-card-title">样本规模</div>
+                    <div class="detail-card-value" id="detailCount">--</div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-card-title">处理方法</div>
+                    <div class="detail-card-value" id="detailMethod">--</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="node-description" id="nodeDescription">
+            点击上方流程节点查看详细数据血缘关系和分析方法
+        </div>
+
+        <div class="content-grid" style="margin-top: 15px;">
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">📊</span><span class="panel-header-title">数据质量分布</span></div>
+                <div class="panel-body">
+                    <div id="qualityChart" class="chart"></div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">📈</span><span class="panel-header-title">特征重要性变化</span></div>
+                <div class="panel-body">
+                    <div id="featureChart" class="chart"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        var charts = {};
+        var nodeData = {
+            raw: { source: '电网调度系统/充电运营平台/气象数据', count: '58,240条原始记录', method: '数据采集与存储', description: '原始数据来源于三个主要系统：电网调度系统提供实时负荷和发电数据，充电运营平台采集充电桩运行状态和用户行为数据，气象系统提供光照和风速数据用于新能源发电预测。数据时间跨度为2024年全年，时间分辨率为15分钟。' },
+            clean: { source: '原始数据', count: '52,180条有效记录', method: '缺失值处理/异常值检测/去重', description: '数据清洗包括三个主要步骤：1) 缺失值处理：对充电中断、传感器故障等造成的缺失采用插值法补充；2) 异常值检测：基于3σ准则识别极端值并修正；3) 去重处理：去除重复记录和无效数据。最终数据有效率为89.6%。' },
+            align: { source: '清洗后数据', count: '52,180条时间对齐记录', method: '时间戳同步/重采样/时区统一', description: '由于各数据源时间戳存在差异，采用统一时间基准进行对齐。将原始15分钟数据重采样为1小时数据，确保所有变量在同一时间点具有对应值。同时进行时区统一和夏令时调整。' },
+            feature: { source: '对齐后数据', count: '48个衍生特征', method: '特征构造/编码/标准化', description: '特征工程构建了48个衍生特征，包括：1) 时序特征（小时、星期、月份、节假日）；2) 充电行为特征（充电功率、时长、SOC变化率）；3) 电网特征（碳强度、峰谷状态）；4) 交叉特征（V2G×绿电匹配度）。采用One-Hot编码和Z-score标准化。' },
+            model: { source: '特征工程数据', count: '3个预测模型', method: 'XGBoost/LSTM/随机森林集成', description: '构建了三个互补的预测模型：1) XGBoost用于结构化特征的非线性映射；2) LSTM捕捉时序依赖关系；3) 随机森林作为基学习器。通过加权融合得到最终预测结果，模型在验证集上的RMSE为45.2kg。' },
+            shap: { source: '模型预测结果', count: '6个关键特征', method: 'TreeExplainer/SHAP值计算', description: '采用SHAP（SHapley Additive exPlanations）方法解释模型输出。通过计算每个特征对预测结果的边际贡献，量化各因素对减排量的影响程度。V2G参与率贡献最大（32.5%），其次是清洁能源渗透率（25.8%）。' },
+            causal: { source: 'SHAP分析结果', count: '7个因果变量', method: 'Granger检验/脉冲响应/VAR模型', description: '基于Granger因果检验和脉冲响应分析构建因果网络。识别出关键因果路径：充电负荷→碳强度→绿电匹配度→减排量。V2G通过影响峰谷差率间接作用于减排，滞后时间约2-4小时。' },
+            sim: { source: '因果分析模型', count: '365天仿真预测', method: 'Monte Carlo/场景模拟/敏感性分析', description: '基于因果网络进行365天动态仿真。采用Monte Carlo方法模拟不确定性，设置V1G、V2G、清洁能源三种情景。敏感性分析评估关键参数变化对结果的影响，为决策提供量化依据。' },
+            result: { source: '仿真预测结果', count: '3,024kg年度减排量', method: '结果汇总/效果评估/建议生成', description: '相对于基准情景，年度碳减排量达到3,024kg。减排来源分解：V2G贡献52.3%，有序充电贡献28.6%，绿电消纳贡献19.1%。系统已生成优化建议，可通过政策沙盘进一步评估实施效果。' }
+        };
+
+        function selectNode(nodeId) {
+            document.querySelectorAll('.pipeline-node').forEach(function(n) { n.classList.remove('selected'); });
+            event.target.closest('.pipeline-node').classList.add('selected');
+            var data = nodeData[nodeId];
+            document.getElementById('detailSource').textContent = data.source;
+            document.getElementById('detailCount').textContent = data.count;
+            document.getElementById('detailMethod').textContent = data.method;
+            document.getElementById('nodeDescription').textContent = data.description;
+            updateCharts(nodeId);
+        }
+
+        function updateCharts(nodeId) {
+            var qualityData = { raw: [95, 3, 2], clean: [98, 1.5, 0.5], align: [99, 0.8, 0.2], feature: [100, 0, 0], model: [92, 5, 3], shap: [100, 0, 0], causal: [88, 8, 4], sim: [95, 3, 2], result: [100, 0, 0] };
+            var featureData = { raw: [0.12, 0.08, 0.05], clean: [0.15, 0.10, 0.07], align: [0.18, 0.12, 0.08], feature: [0.25, 0.18, 0.12], model: [0.30, 0.22, 0.15], shap: [0.34, 0.27, 0.16], causal: [0.32, 0.25, 0.18], sim: [0.35, 0.28, 0.20], result: [0.34, 0.27, 0.19] };
+
+            charts.quality.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'item', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#10b981' },
+                series: [{
+                    type: 'pie', radius: ['40%', '70%'],
+                    data: [
+                        { value: qualityData[nodeId][0], name: '有效数据', itemStyle: { color: '#10b981' } },
+                        { value: qualityData[nodeId][1], name: '待处理', itemStyle: { color: '#fbbf24' } },
+                        { value: qualityData[nodeId][2], name: '异常数据', itemStyle: { color: '#ef4444' } }
+                    ],
+                    label: { color: '#7a8fa6' }
+                }]
+            });
+
+            charts.feature.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#10b981' },
+                legend: { data: ['V2G', '清洁能源', '峰谷电价'], textStyle: { color: '#7a8fa6' } },
+                xAxis: { type: 'category', data: ['原始', '清洗', '对齐', '特征', '模型', 'SHAP', '因果', '仿真', '结果'], axisLine: { lineStyle: { color: 'rgba(16,185,129,0.3)' } }, axisLabel: { color: '#7a8fa6', rotate: 15 } },
+                yAxis: { type: 'value', name: '重要性', axisLine: { lineStyle: { color: 'rgba(16,185,129,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(16,185,129,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                series: [
+                    { name: 'V2G', type: 'line', data: featureData[nodeId].map(function(v, i) { return (v + 0.1 * (3-i)).toFixed(2); }), smooth: true, lineStyle: { color: '#10b981', width: 2 }, itemStyle: { color: '#10b981' } },
+                    { name: '清洁能源', type: 'line', data: featureData[nodeId].map(function(v, i) { return (v + 0.05 * (3-i)).toFixed(2); }), smooth: true, lineStyle: { color: '#06b6d4', width: 2 }, itemStyle: { color: '#06b6d4' } },
+                    { name: '峰谷电价', type: 'line', data: featureData[nodeId], smooth: true, lineStyle: { color: '#fbbf24', width: 2 }, itemStyle: { color: '#fbbf24' } }
+                ]
+            });
+        }
+
+        function initCharts() {
+            charts.quality = echarts.init(document.getElementById('qualityChart'));
+            charts.feature = echarts.init(document.getElementById('featureChart'));
+            selectNode('raw');
+        }
+
+        window.onload = function() { initCharts(); };
+        window.addEventListener('resize', function() { Object.values(charts).forEach(function(c) { if (c) c.resize(); }); });
+    </script>
+</body>
+</html>

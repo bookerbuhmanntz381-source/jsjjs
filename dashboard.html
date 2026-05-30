@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧能源调度中心 - 数字孪生系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e17 0%, #1a1f3a 50%, #0d1421 100%);
+            min-height: 100vh;
+            color: #e0e6ed;
+            overflow-x: hidden;
+        }
+        .dashboard-header {
+            background: linear-gradient(90deg, rgba(0,212,255,0.08) 0%, rgba(0,0,0,0.4) 50%, rgba(0,212,255,0.08) 100%);
+            border-bottom: 1px solid rgba(0,212,255,0.2);
+            padding: 12px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            backdrop-filter: blur(15px);
+        }
+        .system-title { display: flex; align-items: center; gap: 12px; }
+        .system-logo {
+            width: 42px; height: 42px;
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 0 25px rgba(0,212,255,0.4);
+            animation: logoGlow 3s ease-in-out infinite;
+        }
+        @keyframes logoGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0,212,255,0.4); }
+            50% { box-shadow: 0 0 40px rgba(0,212,255,0.7); }
+        }
+        .system-name h1 {
+            font-size: 1.3em;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+        }
+        .system-name p { font-size: 0.75em; color: #5a6a7a; letter-spacing: 1px; }
+        .header-right { display: flex; align-items: center; gap: 25px; }
+        .run-time {
+            text-align: right;
+            padding: 8px 15px;
+            background: rgba(0,212,255,0.05);
+            border: 1px solid rgba(0,212,255,0.15);
+            border-radius: 8px;
+        }
+        .run-time .label { font-size: 0.7em; color: #5a6a7a; }
+        .run-time .time {
+            font-size: 1.2em;
+            color: #00d4ff;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 10px rgba(0,212,255,0.5);
+        }
+        .status-badge {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 15px;
+            background: rgba(0,255,136,0.08);
+            border: 1px solid rgba(0,255,136,0.25);
+            border-radius: 20px;
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            background: #00ff88;
+            border-radius: 50%;
+            animation: statusPulse 2s infinite;
+        }
+        @keyframes statusPulse {
+            0%, 100% { box-shadow: 0 0 5px #00ff88; transform: scale(1); }
+            50% { box-shadow: 0 0 15px #00ff88; transform: scale(1.2); }
+        }
+        .main-container { padding: 75px 15px 15px; max-width: 1920px; margin: 0 auto; }
+        .hero-section {
+            background: linear-gradient(135deg, rgba(0,212,255,0.05) 0%, rgba(0,0,0,0.3) 100%);
+            border: 1px solid rgba(0,212,255,0.15);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+        }
+        .hero-title {
+            font-size: 1.5em;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+        .hero-desc { color: #7a8fa6; font-size: 0.95em; margin-bottom: 20px; }
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        .module-card {
+            background: linear-gradient(135deg, rgba(0,212,255,0.03) 0%, rgba(0,0,0,0.4) 100%);
+            border: 1px solid rgba(0,212,255,0.12);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .module-card:hover {
+            border-color: rgba(0,212,255,0.4);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,212,255,0.15);
+        }
+        .module-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent1), var(--accent2));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .module-card:hover::before { opacity: 1; }
+        .module-icon {
+            font-size: 2.5em;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 0 10px var(--accent1));
+        }
+        .module-number {
+            position: absolute;
+            top: 15px; right: 15px;
+            font-size: 0.75em;
+            color: rgba(0,212,255,0.3);
+            font-weight: bold;
+        }
+        .module-title {
+            font-size: 1.1em;
+            color: #e0e6ed;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .module-desc {
+            font-size: 0.85em;
+            color: #5a6a7a;
+            line-height: 1.5;
+        }
+        .module-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+        .module-tag {
+            padding: 3px 10px;
+            background: rgba(0,212,255,0.1);
+            border: 1px solid rgba(0,212,255,0.2);
+            border-radius: 12px;
+            font-size: 0.7em;
+            color: #00d4ff;
+        }
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(0,212,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--accent, #00d4ff);
+            text-shadow: 0 0 15px var(--accent, rgba(0,212,255,0.5));
+        }
+        .stat-label { font-size: 0.8em; color: #5a6a7a; margin-top: 5px; }
+        @media (max-width: 1200px) { .quick-stats { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) {
+            .quick-stats { grid-template-columns: 1fr; }
+            .header-right { gap: 10px; }
+            .run-time { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header class="dashboard-header">
+        <div class="system-title">
+            <div class="system-logo">⚡</div>
+            <div class="system-name">
+                <h1>智慧能源调度中心</h1>
+                <p>Vehicle-Grid Integration Digital Twin System v2.0</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                <span style="font-size:0.85em;color:#00ff88;">系统运行正常</span>
+            </div>
+            <div class="run-time">
+                <div class="label">系统运行时间</div>
+                <div class="time" id="runTime">00:00:00</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="hero-section">
+            <h1 class="hero-title">🚀 智慧能源数字孪生系统</h1>
+            <p class="hero-desc">基于数据驱动的车网协同碳减排研究平台，融合AI智能分析、实时仿真推演与交互式决策支持</p>
+            
+            <div class="quick-stats">
+                <div class="stat-card" style="--accent: #00ff88;">
+                    <div class="stat-value" id="statCarbon">3,024</div>
+                    <div class="stat-label">总碳减排量 (kg)</div>
+                </div>
+                <div class="stat-card" style="--accent: #00d4ff;">
+                    <div class="stat-value" id="statGreen">26.2%</div>
+                    <div class="stat-label">绿电消纳率</div>
+                </div>
+                <div class="stat-card" style="--accent: #ff9f43;">
+                    <div class="stat-value" id="statIntensity">680</div>
+                    <div class="stat-label">电网碳强度 (g/kWh)</div>
+                </div>
+                <div class="stat-card" style="--accent: #a855f7;">
+                    <div class="stat-value" id="statEV">1,284</div>
+                    <div class="stat-label">接入电动汽车 (辆)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="module-grid">
+            <a href="module1_cockpit.html" class="module-card" style="--accent1: #00d4ff; --accent2: #00ff88;">
+                <div class="module-icon">🎯</div>
+                <div class="module-number">01</div>
+                <div class="module-title">低碳决策驾驶舱</div>
+                <div class="module-desc">核心指标总览、KPI仪表盘、实时趋势分析、图表联动高亮</div>
+                <div class="module-tags">
+                    <span class="module-tag">KPI卡片</span>
+                    <span class="module-tag">仪表盘</span>
+                    <span class="module-tag">联动交互</span>
+                </div>
+            </a>
+
+            <a href="module2_advisor.html" class="module-card" style="--accent1: #10b981; --accent2: #34d399;">
+                <div class="module-icon">🤖</div>
+                <div class="module-number">02</div>
+                <div class="module-title">AI低碳充电顾问</div>
+                <div class="module-desc">智能对话机器人、多轮交互、动态计算充电策略、实时优化建议</div>
+                <div class="module-tags">
+                    <span class="module-tag">AI对话</span>
+                    <span class="module-tag">智能推荐</span>
+                    <span class="module-tag">实时计算</span>
+                </div>
+            </a>
+
+            <a href="module3_whatif.html" class="module-card" style="--accent1: #f59e0b; --accent2: #fbbf24;">
+                <div class="module-icon">🔬</div>
+                <div class="module-number">03</div>
+                <div class="module-title">What-If情景推演实验室</div>
+                <div class="module-desc">参数滑块控制、实时重新计算、多情景切换、碳排放预测</div>
+                <div class="module-tags">
+                    <span class="module-tag">参数调节</span>
+                    <span class="module-tag">情景推演</span>
+                    <span class="module-tag">实时计算</span>
+                </div>
+            </a>
+
+            <a href="module4_digitaltwin.html" class="module-card" style="--accent1: #8b5cf6; --accent2: #a78bfa;">
+                <div class="module-icon">🌐</div>
+                <div class="module-number">04</div>
+                <div class="module-title">数字孪生能源系统</div>
+                <div class="module-desc">24小时动态仿真、粒子流动画、能量流向可视化、实时推演控制</div>
+                <div class="module-tags">
+                    <span class="module-tag">数字孪生</span>
+                    <span class="module-tag">粒子动画</span>
+                    <span class="module-tag">动态仿真</span>
+                </div>
+            </a>
+
+            <a href="module5_causal.html" class="module-card" style="--accent1: #ef4444; --accent2: #f87171;">
+                <div class="module-icon">🔗</div>
+                <div class="module-number">05</div>
+                <div class="module-title">因果分析中心</div>
+                <div class="module-desc">交互式因果网络、Granger检验可视化、脉冲响应分析、节点联动</div>
+                <div class="module-tags">
+                    <span class="module-tag">因果网络</span>
+                    <span class="module-tag">脉冲响应</span>
+                    <span class="module-tag">节点交互</span>
+                </div>
+            </a>
+
+            <a href="module6_shap.html" class="module-card" style="--accent1: #ec4899; --accent2: #f472b6;">
+                <div class="module-icon">📊</div>
+                <div class="module-number">06</div>
+                <div class="module-title">SHAP模型解释中心</div>
+                <div class="module-desc">SHAP排序图、贡献图、瀑布图、敏感性分析模拟、特征解释</div>
+                <div class="module-tags">
+                    <span class="module-tag">SHAP分析</span>
+                    <span class="module-tag">可解释AI</span>
+                    <span class="module-tag">敏感性分析</span>
+                </div>
+            </a>
+
+            <a href="module7_lineage.html" class="module-card" style="--accent1: #06b6d4; --accent2: #22d3ee;">
+                <div class="module-icon">🕸️</div>
+                <div class="module-number">07</div>
+                <div class="module-title">数据血缘分析中心</div>
+                <div class="module-desc">研究流程可视化、数据流转追踪、节点点击展开、动态流程演绎</div>
+                <div class="module-tags">
+                    <span class="module-tag">数据血缘</span>
+                    <span class="module-tag">流程可视化</span>
+                    <span class="module-tag">节点交互</span>
+                </div>
+            </a>
+
+            <a href="module8_policy.html" class="module-card" style="--accent1: #84cc16; --accent2: #a3e635;">
+                <div class="module-icon">📋</div>
+                <div class="module-number">08</div>
+                <div class="module-title">政策沙盘系统</div>
+                <div class="module-desc">政策参数调节、收益预测、最优组合推荐、实时影响分析</div>
+                <div class="module-tags">
+                    <span class="module-tag">政策模拟</span>
+                    <span class="module-tag">收益预测</span>
+                    <span class="module-tag">智能推荐</span>
+                </div>
+            </a>
+
+            <a href="module9_innovation.html" class="module-card" style="--accent1: #f97316; --accent2: #fb923c;">
+                <div class="module-icon">💡</div>
+                <div class="module-number">09</div>
+                <div class="module-title">研究创新展示中心</div>
+                <div class="module-desc">五大创新点展示、卡片动画展开、详情页交互、学术价值呈现</div>
+                <div class="module-tags">
+                    <span class="module-tag">创新展示</span>
+                    <span class="module-tag">卡片动画</span>
+                    <span class="module-tag">学术价值</span>
+                </div>
+            </a>
+
+            <a href="module10_expert.html" class="module-card" style="--accent1: #6366f1; --accent2: #818cf8;">
+                <div class="module-icon">📑</div>
+                <div class="module-number">10</div>
+                <div class="module-title">专家评估模式</div>
+                <div class="module-desc">自动生成研究报告、PDF导出、决策建议书、一键生成评估报告</div>
+                <div class="module-tags">
+                    <span class="module-tag">报告导出</span>
+                    <span class="module-tag">决策建议</span>
+                    <span class="module-tag">一键生成</span>
+                </div>
+            </a>
+        </div>
+
+        <div style="text-align: center; padding: 25px; color: #5a6a7a; font-size: 0.85em;">
+            <p>智慧能源调度中心 v2.0 | 车网协同碳减排研究平台 | 支持实时数据更新与人机交互</p>
+            <p style="margin-top: 8px;">© 2026 Vehicle-Grid Integration Digital Twin System</p>
+        </div>
+    </main>
+
+    <script>
+        var startTime = Date.now();
+        function formatTime(ms) {
+            var s = Math.floor(ms / 1000);
+            var h = Math.floor(s / 3600);
+            var m = Math.floor((s % 3600) / 60);
+            var sec = s % 60;
+            return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+        }
+        setInterval(function() {
+            document.getElementById('runTime').textContent = formatTime(Date.now() - startTime);
+        }, 1000);
+
+        function updateStats() {
+            document.getElementById('statCarbon').textContent = Math.round(3000 + Math.random() * 100).toLocaleString();
+            document.getElementById('statGreen').textContent = (25 + Math.random() * 3).toFixed(1) + '%';
+            document.getElementById('statIntensity').textContent = Math.round(670 + Math.random() * 30);
+            document.getElementById('statEV').textContent = Math.round(1280 + Math.random() * 30).toLocaleString();
+        }
+        setInterval(updateStats, 3000);
+    </script>
+</body>
+</html>

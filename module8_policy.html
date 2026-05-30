@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模块八：政策沙盘系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #0a0e17 0%, #1a1f3a 50%, #0d1421 100%); min-height: 100vh; color: #e0e6ed; }
+        .header { background: linear-gradient(90deg, rgba(251,191,36,0.08) 0%, rgba(0,0,0,0.4) 50%, rgba(251,191,36,0.08) 100%); border-bottom: 1px solid rgba(251,191,36,0.2); padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; backdrop-filter: blur(15px); }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .back-btn { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: #fbbf24; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-size: 0.85em; }
+        .back-btn:hover { background: rgba(251,191,36,0.2); }
+        .header-title { font-size: 1.1em; color: #e0e6ed; }
+        .main-container { padding: 75px 15px 15px; max-width: 1920px; margin: 0 auto; }
+        .control-panel { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(251,191,36,0.02) 100%); border: 1px solid rgba(251,191,36,0.15); border-radius: 12px; padding: 20px; margin-bottom: 15px; }
+        .control-title { font-size: 1em; color: #fbbf24; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .control-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
+        .control-group { background: rgba(0,0,0,0.2); border-radius: 10px; padding: 12px; }
+        .control-label { font-size: 0.8em; color: #7a8fa6; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        .control-value { font-size: 1.2em; color: #fbbf24; font-weight: bold; margin-bottom: 8px; }
+        .slider { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(251,191,36,0.2); border-radius: 2px; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 50%; cursor: pointer; }
+        .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .panel { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(251,191,36,0.02) 100%); border: 1px solid rgba(251,191,36,0.12); border-radius: 12px; overflow: hidden; }
+        .panel-header { background: linear-gradient(90deg, rgba(251,191,36,0.08) 0%, transparent 100%); padding: 12px 18px; border-bottom: 1px solid rgba(251,191,36,0.1); display: flex; align-items: center; gap: 10px; }
+        .panel-header-icon { font-size: 1.1em; }
+        .panel-header-title { font-size: 0.95em; color: #e0e6ed; font-weight: 600; }
+        .panel-body { padding: 15px; }
+        .chart { width: 100%; height: 260px; }
+        .result-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
+        .result-card { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; text-align: center; }
+        .result-value { font-size: 1.4em; font-weight: bold; color: #fbbf24; }
+        .result-value.green { color: #00ff88; }
+        .result-value.blue { color: #00d4ff; }
+        .result-label { font-size: 0.75em; color: #7a8fa6; margin-top: 4px; }
+        .recommendation-box { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; padding: 15px; margin-top: 15px; }
+        .rec-title { font-size: 0.95em; color: #fbbf24; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .rec-content { font-size: 0.85em; color: #b0bec5; line-height: 1.6; }
+        .rec-highlight { color: #fbbf24; font-weight: 600; }
+        @media (max-width: 1200px) { .control-grid { grid-template-columns: repeat(3, 1fr); } .result-row { grid-template-columns: repeat(2, 1fr); } .content-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <a href="dashboard.html" class="back-btn">← 返回主页</a>
+            <h1 class="header-title">📋 模块八：政策沙盘系统</h1>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="control-panel">
+            <div class="control-title">⚙️ 政策参数调节</div>
+            <div class="control-grid">
+                <div class="control-group">
+                    <div class="control-label">💰 峰谷电价差 (元/kWh)</div>
+                    <div class="control-value" id="priceDiffVal">0.80</div>
+                    <input type="range" class="slider" id="priceDiff" min="0.3" max="1.5" value="0.8" step="0.05" oninput="updateSimulation()">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">⚡ V2G补贴 (元/kWh)</div>
+                    <div class="control-value" id="v2gSubVal">0.50</div>
+                    <input type="range" class="slider" id="v2gSub" min="0" max="1.2" value="0.5" step="0.05" oninput="updateSimulation()">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">☀️ 绿电补贴 (元/kWh)</div>
+                    <div class="control-value" id="greenSubVal">0.30</div>
+                    <input type="range" class="slider" id="greenSub" min="0" max="0.8" value="0.3" step="0.05" oninput="updateSimulation()">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">🎫 碳积分奖励 (积分/kWh)</div>
+                    <div class="control-value" id="carbonCreditVal">15</div>
+                    <input type="range" class="slider" id="carbonCredit" min="5" max="30" value="15" step="1" oninput="updateSimulation()">
+                </div>
+                <div class="control-group">
+                    <div class="control-label">👥 用户参与率 (%)</div>
+                    <div class="control-value" id="participationVal">45%</div>
+                    <input type="range" class="slider" id="participation" min="20" max="80" value="45" step="5" oninput="updateSimulation()">
+                </div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">📊</span><span class="panel-header-title">政策效果预测</span></div>
+                <div class="panel-body">
+                    <div id="predictionChart" class="chart"></div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">💹</span><span class="panel-header-title">收益分配分析</span></div>
+                <div class="panel-body">
+                    <div id="benefitChart" class="chart"></div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">📈</span><span class="panel-header-title">绿电消纳与电网稳定性</span></div>
+                <div class="panel-body">
+                    <div id="stabilityChart" class="chart"></div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">🎯</span><span class="panel-header-title">综合评价与建议</span></div>
+                <div class="panel-body">
+                    <div class="result-row">
+                        <div class="result-card">
+                            <div class="result-value green" id="resCarbon">3,024</div>
+                            <div class="result-label">碳减排量 (kg)</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-value blue" id="resUserProfit">1,850</div>
+                            <div class="result-label">用户收益 (元)</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-value" id="resSocialProfit">4,260</div>
+                            <div class="result-label">社会收益 (元)</div>
+                        </div>
+                        <div class="result-card">
+                            <div class="result-value" id="resGreenRate">26.2%</div>
+                            <div class="result-label">绿电消纳率</div>
+                        </div>
+                    </div>
+                    <div class="recommendation-box" id="recommendationBox">
+                        <div class="rec-title">💡 最佳政策组合推荐</div>
+                        <div class="rec-content" id="recContent">基于当前参数设置，推荐采用：<span class="rec-highlight">V2G补贴0.6元/kWh + 碳积分20积分/kWh</span> 的组合，预计可实现年度碳减排 <span class="rec-highlight">3,500kg</span>，用户参与率达到 <span class="rec-highlight">65%</span>。</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        var charts = {};
+
+        function updateSimulation() {
+            var priceDiff = parseFloat(document.getElementById('priceDiff').value);
+            var v2gSub = parseFloat(document.getElementById('v2gSub').value);
+            var greenSub = parseFloat(document.getElementById('greenSub').value);
+            var carbonCredit = parseInt(document.getElementById('carbonCredit').value);
+            var participation = parseInt(document.getElementById('participation').value);
+
+            document.getElementById('priceDiffVal').textContent = priceDiff.toFixed(2);
+            document.getElementById('v2gSubVal').textContent = v2gSub.toFixed(2);
+            document.getElementById('greenSubVal').textContent = greenSub.toFixed(2);
+            document.getElementById('carbonCreditVal').textContent = carbonCredit;
+            document.getElementById('participationVal').textContent = participation + '%';
+
+            var carbonReduction = 2500 + priceDiff * 800 + v2gSub * 1500 + greenSub * 1000 + carbonCredit * 30 + participation * 25;
+            var userProfit = v2gSub * 1200 + priceDiff * 600 + carbonCredit * 15 + participation * 20;
+            var socialBenefit = carbonReduction * 1.8 + userProfit * 1.5;
+            var greenRate = 20 + v2gSub * 15 + greenSub * 20 + participation * 0.15;
+
+            document.getElementById('resCarbon').textContent = Math.round(carbonReduction).toLocaleString();
+            document.getElementById('resUserProfit').textContent = Math.round(userProfit).toLocaleString();
+            document.getElementById('resSocialProfit').textContent = Math.round(socialBenefit).toLocaleString();
+            document.getElementById('resGreenRate').textContent = greenRate.toFixed(1) + '%';
+
+            var recText = '基于当前参数设置，推荐采用：<span class="rec-highlight">';
+            if (v2gSub < 0.6) recText += 'V2G补贴0.6元/kWh';
+            else if (carbonCredit < 20) recText += '碳积分20积分/kWh';
+            else recText += '绿电补贴0.4元/kWh';
+            recText += '</span> 的组合，预计可实现年度碳减排 <span class="rec-highlight">' + Math.round(carbonReduction * 1.15).toLocaleString() + 'kg</span>，用户参与率达到 <span class="rec-highlight">' + Math.min(95, participation + 15) + '%</span>。';
+            document.getElementById('recContent').innerHTML = recText;
+
+            updateCharts(priceDiff, v2gSub, greenSub, carbonCredit, participation);
+        }
+
+        function updateCharts(priceDiff, v2gSub, greenSub, carbonCredit, participation) {
+            var months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            var carbonData = months.map(function(_, i) {
+                return Math.round((250 + Math.sin(i / 12 * Math.PI * 2) * 80) * (1 + (priceDiff + v2gSub + greenSub) / 5));
+            });
+
+            charts.prediction.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#fbbf24' },
+                legend: { data: ['碳减排量', '用户收益'], textStyle: { color: '#7a8fa6' } },
+                xAxis: { type: 'category', data: months, axisLine: { lineStyle: { color: 'rgba(251,191,36,0.3)' } }, axisLabel: { color: '#7a8fa6' } },
+                yAxis: [
+                    { type: 'value', name: '碳减排(kg)', axisLine: { lineStyle: { color: 'rgba(251,191,36,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(251,191,36,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                    { type: 'value', name: '收益(元)', axisLine: { lineStyle: { color: 'rgba(0,212,255,0.3)' } }, splitLine: { show: false }, axisLabel: { color: '#7a8fa6' } }
+                ],
+                series: [
+                    { name: '碳减排量', type: 'bar', data: carbonData, itemStyle: { color: 'rgba(251,191,36,0.6)', borderRadius: [4, 4, 0, 0] } },
+                    { name: '用户收益', type: 'line', yAxisIndex: 1, data: carbonData.map(function(v) { return Math.round(v * 0.6); }), smooth: true, lineStyle: { color: '#00d4ff', width: 2 }, itemStyle: { color: '#00d4ff' } }
+                ]
+            });
+
+            charts.benefit.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'item', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#fbbf24' },
+                series: [{
+                    type: 'pie', radius: ['45%', '75%'],
+                    data: [
+                        { value: Math.round(v2gSub * 800 + participation * 10), name: 'V2G收益', itemStyle: { color: '#a855f7' } },
+                        { value: Math.round(priceDiff * 600), name: '峰谷套利', itemStyle: { color: '#fbbf24' } },
+                        { value: Math.round(greenSub * 400), name: '绿电补贴', itemStyle: { color: '#00ff88' } },
+                        { value: Math.round(carbonCredit * 20), name: '碳积分', itemStyle: { color: '#06b6d4' } }
+                    ],
+                    label: { color: '#7a8fa6' }
+                }]
+            });
+
+            charts.stability.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#fbbf24' },
+                legend: { data: ['绿电消纳率', '电网稳定性指数'], textStyle: { color: '#7a8fa6' } },
+                xAxis: { type: 'category', data: months, axisLine: { lineStyle: { color: 'rgba(251,191,36,0.3)' } }, axisLabel: { color: '#7a8fa6' } },
+                yAxis: [
+                    { type: 'value', name: '消纳率%', min: 15, max: 45, axisLine: { lineStyle: { color: 'rgba(0,255,136,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(251,191,36,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                    { type: 'value', name: '稳定性', min: 70, max: 100, axisLine: { lineStyle: { color: 'rgba(251,191,36,0.3)' } }, splitLine: { show: false }, axisLabel: { color: '#7a8fa6' } }
+                ],
+                series: [
+                    { name: '绿电消纳率', type: 'line', data: months.map(function(_, i) { return (20 + v2gSub * 10 + greenSub * 12 + participation * 0.1 + Math.sin(i / 12 * Math.PI * 2) * 5).toFixed(1); }), smooth: true, areaStyle: { color: 'rgba(0,255,136,0.1)' }, lineStyle: { color: '#00ff88', width: 2 }, itemStyle: { color: '#00ff88' } },
+                    { name: '电网稳定性指数', type: 'line', yAxisIndex: 1, data: months.map(function(_, i) { return Math.round(85 + v2gSub * 8 + participation * 0.15 + Math.cos(i / 12 * Math.PI * 2) * 3); }), smooth: true, lineStyle: { color: '#fbbf24', width: 2 }, itemStyle: { color: '#fbbf24' } }
+                ]
+            });
+        }
+
+        function initCharts() {
+            charts.prediction = echarts.init(document.getElementById('predictionChart'));
+            charts.benefit = echarts.init(document.getElementById('benefitChart'));
+            charts.stability = echarts.init(document.getElementById('stabilityChart'));
+            updateSimulation();
+        }
+
+        window.onload = function() { initCharts(); };
+        window.addEventListener('resize', function() { Object.values(charts).forEach(function(c) { if (c) c.resize(); }); });
+    </script>
+</body>
+</html>

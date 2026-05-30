@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模块五：因果分析中心</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #0a0e17 0%, #1a1f3a 50%, #0d1421 100%); min-height: 100vh; color: #e0e6ed; }
+        .header { background: linear-gradient(90deg, rgba(239,68,68,0.08) 0%, rgba(0,0,0,0.4) 50%, rgba(239,68,68,0.08) 100%); border-bottom: 1px solid rgba(239,68,68,0.2); padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; backdrop-filter: blur(15px); }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .back-btn { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-size: 0.85em; }
+        .back-btn:hover { background: rgba(239,68,68,0.2); }
+        .header-title { font-size: 1.1em; color: #e0e6ed; }
+        .main-container { padding: 75px 15px 15px; max-width: 1920px; margin: 0 auto; }
+        .info-bar { background: linear-gradient(90deg, rgba(239,68,68,0.08) 0%, rgba(0,0,0,0.3) 100%); border: 1px solid rgba(239,68,68,0.15); border-radius: 10px; padding: 12px 18px; margin-bottom: 15px; display: flex; gap: 30px; font-size: 0.85em; }
+        .info-item { display: flex; align-items: center; gap: 8px; }
+        .info-label { color: #7a8fa6; }
+        .info-value { color: #ef4444; font-weight: 600; }
+        .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .panel { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(239,68,68,0.02) 100%); border: 1px solid rgba(239,68,68,0.12); border-radius: 12px; overflow: hidden; }
+        .panel-header { background: linear-gradient(90deg, rgba(239,68,68,0.08) 0%, transparent 100%); padding: 12px 18px; border-bottom: 1px solid rgba(239,68,68,0.1); display: flex; align-items: center; gap: 10px; }
+        .panel-header-icon { font-size: 1.1em; }
+        .panel-header-title { font-size: 0.95em; color: #e0e6ed; font-weight: 600; }
+        .panel-body { padding: 15px; }
+        .chart { width: 100%; height: 300px; }
+        .causal-network { height: 400px; }
+        .node-detail { background: rgba(0,0,0,0.3); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 15px; margin-top: 15px; }
+        .node-detail-title { font-size: 0.95em; color: #ef4444; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .node-detail-content { font-size: 0.85em; color: #b0bec5; line-height: 1.6; }
+        .indicator-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+        .indicator-item { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; text-align: center; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+        .indicator-item:hover { border-color: rgba(239,68,68,0.3); }
+        .indicator-item.selected { border-color: #ef4444; background: rgba(239,68,68,0.1); }
+        .indicator-value { font-size: 1.2em; font-weight: bold; color: #ef4444; }
+        .indicator-label { font-size: 0.75em; color: #7a8fa6; margin-top: 4px; }
+        .path-highlight { background: rgba(239,68,68,0.1); padding: 10px; border-radius: 8px; margin-top: 10px; }
+        .path-title { font-size: 0.85em; color: #ef4444; margin-bottom: 8px; }
+        .path-text { font-size: 0.8em; color: #b0bec5; line-height: 1.5; }
+        @media (max-width: 1200px) { .content-grid { grid-template-columns: 1fr; } .indicator-list { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <a href="dashboard.html" class="back-btn">← 返回主页</a>
+            <h1 class="header-title">🔗 模块五：因果分析中心</h1>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="info-bar">
+            <div class="info-item"><span class="info-label">分析方法:</span><span class="info-value">Granger因果检验 + 脉冲响应分析</span></div>
+            <div class="info-item"><span class="info-label">样本量:</span><span class="info-value">8,760 小时</span></div>
+            <div class="info-item"><span class="info-label">置信水平:</span><span class="info-value">95%</span></div>
+            <div class="info-item"><span class="info-label">滞后阶数:</span><span class="info-value">4 阶</span></div>
+        </div>
+
+        <div class="indicator-list">
+            <div class="indicator-item" onclick="selectNode('load')">
+                <div class="indicator-value">0.82</div>
+                <div class="indicator-label">充电负荷</div>
+            </div>
+            <div class="indicator-item" onclick="selectNode('carbon')">
+                <div class="indicator-value">0.76</div>
+                <div class="indicator-label">碳强度</div>
+            </div>
+            <div class="indicator-item" onclick="selectNode('green')">
+                <div class="indicator-value">0.71</div>
+                <div class="indicator-label">绿电匹配度</div>
+            </div>
+            <div class="indicator-item" onclick="selectNode('renewable')">
+                <div class="indicator-value">0.68</div>
+                <div class="indicator-label">清洁能源渗透率</div>
+            </div>
+            <div class="indicator-item" onclick="selectNode('potential')">
+                <div class="indicator-value">0.65</div>
+                <div class="indicator-label">可调度潜力</div>
+            </div>
+            <div class="indicator-item" onclick="selectNode('peak')">
+                <div class="indicator-value">0.58</div>
+                <div class="indicator-label">峰谷差率</div>
+            </div>
+            <div class="indicator-item" onclick="selectNode('reduction')">
+                <div class="indicator-value">0.54</div>
+                <div class="indicator-label">减排量</div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">🕸️</span><span class="panel-header-title">因果关系网络图</span></div>
+                <div class="panel-body">
+                    <div id="causalNetwork" class="chart causal-network"></div>
+                    <div class="node-detail" id="nodeDetail">
+                        <div class="node-detail-title">📌 节点详情</div>
+                        <div class="node-detail-content">点击网络中的节点查看详细因果关系分析</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">📉</span><span class="panel-header-title">脉冲响应分析</span></div>
+                <div class="panel-body">
+                    <div id="impulseChart" class="chart"></div>
+                    <div class="path-highlight" id="pathHighlight">
+                        <div class="path-title">🔍 因果传导路径</div>
+                        <div class="path-text">选择节点后显示因果传导路径和时滞信息</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">📊</span><span class="panel-header-title">Granger因果检验结果</span></div>
+                <div class="panel-body">
+                    <div id="grangerChart" class="chart"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">📈</span><span class="panel-header-title">影响强度时序变化</span></div>
+                <div class="panel-body">
+                    <div id="timeSeriesChart" class="chart"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        var charts = {};
+        var selectedNode = null;
+
+        var nodeInfo = {
+            load: { name: '充电负荷', definition: '电动汽车实时充电功率总和', unit: 'MW', pvalue: 0.001, influence: '正向影响碳强度', lag: '2小时', trend: '上升趋势' },
+            carbon: { name: '碳强度', definition: '电网单位电量碳排放量', unit: 'g/kWh', pvalue: 0.003, influence: '受清洁能源负影响', lag: '1小时', trend: '下降趋势' },
+            green: { name: '绿电匹配度', definition: '充电电量中清洁能源占比', unit: '%', pvalue: 0.008, influence: '负向降低碳排放', lag: '0小时', trend: '波动上升' },
+            renewable: { name: '清洁能源渗透率', definition: '新能源发电占比', unit: '%', pvalue: 0.015, influence: '降低电网碳强度', lag: '3小时', trend: '稳步上升' },
+            potential: { name: '可调度潜力', definition: 'V1G/V2G可调节容量', unit: 'MW', pvalue: 0.021, influence: '正相关减排效果', lag: '1小时', trend: '快速提升' },
+            peak: { name: '峰谷差率', definition: '负荷峰谷差与均值比', unit: '%', pvalue: 0.034, influence: 'V2G有效降低', lag: '4小时', trend: '逐步降低' },
+            reduction: { name: '减排量', definition: '相对于基准情景碳减排', unit: '吨', pvalue: 0.006, influence: '多因素综合作用', lag: '2小时', trend: '持续增长' }
+        };
+
+        function selectNode(nodeId) {
+            selectedNode = nodeId;
+            document.querySelectorAll('.indicator-item').forEach(function(item) { item.classList.remove('selected'); });
+            event.target.closest('.indicator-item').classList.add('selected');
+            updateDetail();
+            updateCharts();
+        }
+
+        function updateDetail() {
+            if (!selectedNode) return;
+            var info = nodeInfo[selectedNode];
+            document.getElementById('nodeDetail').innerHTML = '<div class="node-detail-title">📌 ' + info.name + ' 节点详情</div><div class="node-detail-content"><p><strong>定义:</strong> ' + info.definition + '</p><p><strong>单位:</strong> ' + info.unit + '</p><p><strong>P值:</strong> ' + info.pvalue + ' (显著)</p><p><strong>影响方向:</strong> ' + info.influence + '</p><p><strong>影响时滞:</strong> ' + info.lag + '</p><p><strong>趋势:</strong> ' + info.trend + '</p></div>';
+            document.getElementById('pathHighlight').innerHTML = '<div class="path-title">🔍 因果传导路径</div><div class="path-text"><strong>充电负荷</strong> → (2h时滞) → <strong>碳强度</strong> → (1h时滞) → <strong>绿电匹配度</strong> → (2h时滞) → <strong>减排量</strong><br><br>完整传导时间约 <span style="color:#ef4444">5小时</span>，其中 <span style="color:#fbbf24">碳强度节点</span> 为关键传导枢纽';
+        }
+
+        function updateCharts() {
+            var baseData = [0.3, 0.5, 0.7, 0.85, 0.9, 0.8, 0.6, 0.4, 0.2, 0.1];
+            var impulseData = baseData.map(function(v) { return (v + (Math.random() - 0.5) * 0.1).toFixed(3); });
+
+            var causalOption = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'item', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#ef4444' },
+                series: [{
+                    type: 'graph', layout: 'force', symbolSize: 50,
+                    data: [
+                        { name: '充电负荷', value: 0.82, itemStyle: { color: '#ef4444' } },
+                        { name: '碳强度', value: 0.76, itemStyle: { color: '#fbbf24' } },
+                        { name: '绿电匹配度', value: 0.71, itemStyle: { color: '#00ff88' } },
+                        { name: '清洁能源', value: 0.68, itemStyle: { color: '#06b6d4' } },
+                        { name: '可调度潜力', value: 0.65, itemStyle: { color: '#a855f7' } },
+                        { name: '峰谷差率', value: 0.58, itemStyle: { color: '#f97316' } },
+                        { name: '减排量', value: 0.54, itemStyle: { color: '#84cc16' } }
+                    ],
+                    links: [
+                        { source: '充电负荷', target: '碳强度', lineStyle: { color: '#ef4444', width: 3 } },
+                        { source: '清洁能源', target: '碳强度', lineStyle: { color: '#06b6d4', width: 2 } },
+                        { source: '碳强度', target: '绿电匹配度', lineStyle: { color: '#fbbf24', width: 2 } },
+                        { source: '绿电匹配度', target: '减排量', lineStyle: { color: '#00ff88', width: 2 } },
+                        { source: '可调度潜力', target: '峰谷差率', lineStyle: { color: '#a855f7', width: 2 } },
+                        { source: '峰谷差率', target: '充电负荷', lineStyle: { color: '#f97316', width: 1 } },
+                        { source: '碳强度', target: '减排量', lineStyle: { color: '#fbbf24', width: 1 } }
+                    ],
+                    lineStyle: { width: 2, curveness: 0.3, color: '#7a8fa6' },
+                    label: { show: true, color: '#e0e6ed', fontSize: 11 },
+                    force: { repulsion: 300, edgeLength: 120 }
+                }]
+            };
+            charts.causal.setOption(causalOption);
+
+            var impulseOption = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#ef4444' },
+                legend: { data: ['充电负荷→碳强度', '清洁能源→绿电匹配', 'V2G→减排量'], textStyle: { color: '#7a8fa6' } },
+                xAxis: { type: 'category', data: ['0h', '4h', '8h', '12h', '16h', '20h', '24h', '28h', '32h', '36h'], axisLine: { lineStyle: { color: 'rgba(239,68,68,0.3)' } }, axisLabel: { color: '#7a8fa6' } },
+                yAxis: { type: 'value', name: '响应强度', axisLine: { lineStyle: { color: 'rgba(239,68,68,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(239,68,68,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                series: [
+                    { name: '充电负荷→碳强度', type: 'line', data: [0.3, 0.52, 0.71, 0.82, 0.78, 0.65, 0.48, 0.31, 0.18, 0.08], smooth: true, lineStyle: { color: '#ef4444', width: 2 }, itemStyle: { color: '#ef4444' } },
+                    { name: '清洁能源→绿电匹配', type: 'line', data: [0.2, 0.45, 0.68, 0.85, 0.92, 0.88, 0.75, 0.58, 0.38, 0.22], smooth: true, lineStyle: { color: '#06b6d4', width: 2 }, itemStyle: { color: '#06b6d4' } },
+                    { name: 'V2G→减排量', type: 'line', data: [0.15, 0.38, 0.62, 0.79, 0.88, 0.85, 0.72, 0.55, 0.35, 0.20], smooth: true, lineStyle: { color: '#a855f7', width: 2 }, itemStyle: { color: '#a855f7' } }
+                ]
+            };
+            charts.impulse.setOption(impulseOption);
+
+            var grangerOption = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#ef4444' },
+                xAxis: { type: 'category', data: ['负荷→碳强度', '清洁→碳强度', 'V2G→减排', '峰谷→负荷', '绿电→减排', '潜力→峰谷'], axisLine: { lineStyle: { color: 'rgba(239,68,68,0.3)' } }, axisLabel: { color: '#7a8fa6', rotate: 15 } },
+                yAxis: { type: 'value', name: 'F统计量', axisLine: { lineStyle: { color: 'rgba(239,68,68,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(239,68,68,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                series: [{
+                    type: 'bar',
+                    data: [
+                        { value: 12.8, itemStyle: { color: '#ef4444', borderRadius: [4, 4, 0, 0] } },
+                        { value: 9.6, itemStyle: { color: '#06b6d4', borderRadius: [4, 4, 0, 0] } },
+                        { value: 8.2, itemStyle: { color: '#a855f7', borderRadius: [4, 4, 0, 0] } },
+                        { value: 6.5, itemStyle: { color: '#f97316', borderRadius: [4, 4, 0, 0] } },
+                        { value: 5.8, itemStyle: { color: '#00ff88', borderRadius: [4, 4, 0, 0] } },
+                        { value: 4.9, itemStyle: { color: '#fbbf24', borderRadius: [4, 4, 0, 0] } }
+                    ]
+                }]
+            };
+            charts.granger.setOption(grangerOption);
+
+            var timeOption = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#ef4444' },
+                legend: { data: ['因果强度', '传导效率'], textStyle: { color: '#7a8fa6' } },
+                xAxis: { type: 'category', data: ['0时', '4时', '8时', '12时', '16时', '20时', '24时', '28时', '32时', '36时'], axisLine: { lineStyle: { color: 'rgba(239,68,68,0.3)' } }, axisLabel: { color: '#7a8fa6' } },
+                yAxis: [
+                    { type: 'value', name: '强度', axisLine: { lineStyle: { color: 'rgba(239,68,68,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(239,68,68,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                    { type: 'value', name: '效率%', axisLine: { lineStyle: { color: 'rgba(0,255,136,0.3)' } }, splitLine: { show: false }, axisLabel: { color: '#7a8fa6' } }
+                ],
+                series: [
+                    { name: '因果强度', type: 'line', data: [0.45, 0.58, 0.72, 0.85, 0.92, 0.88, 0.78, 0.62, 0.48, 0.35], smooth: true, lineStyle: { color: '#ef4444', width: 2 }, itemStyle: { color: '#ef4444' } },
+                    { name: '传导效率', type: 'line', yAxisIndex: 1, data: [30, 42, 55, 68, 75, 72, 65, 52, 38, 25], smooth: true, lineStyle: { color: '#00ff88', width: 2 }, itemStyle: { color: '#00ff88' } }
+                ]
+            };
+            charts.timeSeries.setOption(timeOption);
+        }
+
+        function initCharts() {
+            charts.causal = echarts.init(document.getElementById('causalNetwork'));
+            charts.impulse = echarts.init(document.getElementById('impulseChart'));
+            charts.granger = echarts.init(document.getElementById('grangerChart'));
+            charts.timeSeries = echarts.init(document.getElementById('timeSeriesChart'));
+            updateCharts();
+        }
+
+        window.onload = function() { initCharts(); };
+        window.addEventListener('resize', function() { Object.values(charts).forEach(function(c) { if (c) c.resize(); }); });
+    </script>
+</body>
+</html>

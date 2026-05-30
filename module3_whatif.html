@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模块三：What-If情景推演实验室</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #0a0e17 0%, #1a1f3a 50%, #0d1421 100%); min-height: 100vh; color: #e0e6ed; }
+        .header { background: linear-gradient(90deg, rgba(245,158,11,0.08) 0%, rgba(0,0,0,0.4) 50%, rgba(245,158,11,0.08) 100%); border-bottom: 1px solid rgba(245,158,11,0.2); padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; backdrop-filter: blur(15px); }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .back-btn { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); color: #f59e0b; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-size: 0.85em; }
+        .back-btn:hover { background: rgba(245,158,11,0.2); }
+        .header-title { font-size: 1.1em; color: #e0e6ed; }
+        .main-container { padding: 75px 15px 15px; max-width: 1920px; margin: 0 auto; }
+        .control-panel { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(245,158,11,0.02) 100%); border: 1px solid rgba(245,158,11,0.15); border-radius: 12px; padding: 20px; margin-bottom: 15px; }
+        .control-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .control-title { font-size: 1.1em; color: #f59e0b; display: flex; align-items: center; gap: 10px; }
+        .scenario-tabs { display: flex; gap: 10px; }
+        .scenario-tab { background: rgba(0,0,0,0.3); border: 1px solid rgba(245,158,11,0.2); color: #7a8fa6; padding: 8px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .scenario-tab.active { background: rgba(245,158,11,0.2); border-color: #f59e0b; color: #f59e0b; }
+        .scenario-tab:hover { border-color: #f59e0b; }
+        .param-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .param-group { background: rgba(0,0,0,0.2); border-radius: 10px; padding: 15px; }
+        .param-label { font-size: 0.85em; color: #7a8fa6; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .param-value { font-size: 1.2em; color: #f59e0b; font-weight: bold; margin-bottom: 10px; }
+        .slider-container { position: relative; }
+        .slider { -webkit-appearance: none; width: 100%; height: 6px; background: rgba(245,158,11,0.2); border-radius: 3px; outline: none; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: linear-gradient(135deg, #f59e0b, #fbbf24); border-radius: 50%; cursor: pointer; box-shadow: 0 0 10px rgba(245,158,11,0.5); }
+        .slider::-moz-range-thumb { width: 18px; height: 18px; background: linear-gradient(135deg, #f59e0b, #fbbf24); border-radius: 50%; cursor: pointer; border: none; }
+        .slider-labels { display: flex; justify-content: space-between; font-size: 0.7em; color: #5a6a7a; margin-top: 5px; }
+        .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .panel { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(245,158,11,0.02) 100%); border: 1px solid rgba(245,158,11,0.12); border-radius: 12px; overflow: hidden; }
+        .panel-header { background: linear-gradient(90deg, rgba(245,158,11,0.08) 0%, transparent 100%); padding: 12px 18px; border-bottom: 1px solid rgba(245,158,11,0.1); display: flex; align-items: center; gap: 10px; }
+        .panel-header-icon { font-size: 1.1em; }
+        .panel-header-title { font-size: 0.95em; color: #e0e6ed; font-weight: 600; }
+        .panel-body { padding: 15px; }
+        .chart { width: 100%; height: 280px; }
+        .result-panel { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(245,158,11,0.02) 100%); border: 1px solid rgba(245,158,11,0.12); border-radius: 12px; overflow: hidden; margin-top: 15px; }
+        .result-header { background: linear-gradient(90deg, rgba(245,158,11,0.08) 0%, transparent 100%); padding: 12px 18px; border-bottom: 1px solid rgba(245,158,11,0.1); }
+        .result-header h3 { font-size: 0.95em; color: #f59e0b; display: flex; align-items: center; gap: 10px; }
+        .result-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 15px; }
+        .result-card { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; text-align: center; border: 1px solid transparent; transition: all 0.2s; }
+        .result-card:hover { border-color: rgba(245,158,11,0.3); }
+        .result-card.highlight { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); }
+        .result-value { font-size: 1.4em; font-weight: bold; color: #f59e0b; }
+        .result-value.green { color: #00ff88; }
+        .result-value.red { color: #ff6b6b; }
+        .result-value.blue { color: #00d4ff; }
+        .result-label { font-size: 0.75em; color: #7a8fa6; margin-top: 4px; }
+        .update-hint { text-align: center; padding: 10px; color: #5a6a7a; font-size: 0.8em; }
+        .update-hint span { color: #f59e0b; }
+        @media (max-width: 1200px) { .content-grid { grid-template-columns: 1fr; } .result-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 768px) { .result-grid { grid-template-columns: repeat(2, 1fr); } .scenario-tabs { flex-wrap: wrap; } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <a href="dashboard.html" class="back-btn">← 返回主页</a>
+            <h1 class="header-title">🔬 模块三：What-If情景推演实验室</h1>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="control-panel">
+            <div class="control-header">
+                <div class="control-title">⚙️ 参数调节面板</div>
+                <div class="scenario-tabs">
+                    <div class="scenario-tab active" onclick="switchScenario('baseline')">基准情景</div>
+                    <div class="scenario-tab" onclick="switchScenario('v1g')">V1G情景</div>
+                    <div class="scenario-tab" onclick="switchScenario('v2g')">V2G情景</div>
+                </div>
+            </div>
+            <div class="param-grid">
+                <div class="param-group">
+                    <div class="param-label">🚗 电动汽车数量</div>
+                    <div class="param-value" id="evCountValue">1,000 辆</div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="evCount" min="500" max="5000" value="1000" step="100" oninput="updateParam()">
+                        <div class="slider-labels"><span>500</span><span>5000</span></div>
+                    </div>
+                </div>
+                <div class="param-group">
+                    <div class="param-label">⚡ V1G参与率</div>
+                    <div class="param-value" id="v1gRateValue">30%</div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="v1gRate" min="0" max="100" value="30" step="5" oninput="updateParam()">
+                        <div class="slider-labels"><span>0%</span><span>100%</span></div>
+                    </div>
+                </div>
+                <div class="param-group">
+                    <div class="param-label">🔄 V2G参与率</div>
+                    <div class="param-value" id="v2gRateValue">10%</div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="v2gRate" min="0" max="50" value="10" step="5" oninput="updateParam()">
+                        <div class="slider-labels"><span>0%</span><span>50%</span></div>
+                    </div>
+                </div>
+                <div class="param-group">
+                    <div class="param-label">☀️ 清洁能源渗透率</div>
+                    <div class="param-value" id="renewableValue">20%</div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="renewable" min="5" max="50" value="20" step="1" oninput="updateParam()">
+                        <div class="slider-labels"><span>5%</span><span>50%</span></div>
+                    </div>
+                </div>
+                <div class="param-group">
+                    <div class="param-label">💨 电网碳强度</div>
+                    <div class="param-value" id="carbonIntensityValue">680 g/kWh</div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="carbonIntensity" min="400" max="1000" value="680" step="10" oninput="updateParam()">
+                        <div class="slider-labels"><span>400</span><span>1000</span></div>
+                    </div>
+                </div>
+                <div class="param-group">
+                    <div class="param-label">💰 峰谷电价差</div>
+                    <div class="param-value" id="priceDiffValue">0.8 元/kWh</div>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="priceDiff" min="0.3" max="1.5" value="0.8" step="0.1" oninput="updateParam()">
+                        <div class="slider-labels"><span>0.3</span><span>1.5</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="update-hint">调整参数后 <span>图表将实时更新</span></div>
+        </div>
+
+        <div class="content-grid">
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">📈</span><span class="panel-header-title">负荷曲线变化</span></div>
+                <div class="panel-body">
+                    <div id="loadCurveChart" class="chart"></div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">💨</span><span class="panel-header-title">碳排放对比</span></div>
+                <div class="panel-body">
+                    <div id="emissionChart" class="chart"></div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">📊</span><span class="panel-header-title">经济收益分析</span></div>
+                <div class="panel-body">
+                    <div id="economyChart" class="chart"></div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">🌱</span><span class="panel-header-title">绿电消纳与减排效果</span></div>
+                <div class="panel-body">
+                    <div id="greenChart" class="chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-panel">
+            <div class="result-header">
+                <h3>📊 实时计算结果</h3>
+            </div>
+            <div class="result-grid">
+                <div class="result-card highlight">
+                    <div class="result-value green" id="resCarbon">4,826</div>
+                    <div class="result-label">碳排放量 (kg)</div>
+                </div>
+                <div class="result-card highlight">
+                    <div class="result-value blue" id="resReduction">3,024</div>
+                    <div class="result-label">减排量 (kg)</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-value" id="resGreen">26.2%</div>
+                    <div class="result-label">绿电消纳率</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-value" id="resPeak">35.8%</div>
+                    <div class="result-label">峰谷差率</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-value green" id="resProfit">1,256</div>
+                    <div class="result-label">经济收益 (元)</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        var charts = {};
+        var currentScenario = 'baseline';
+
+        function switchScenario(s) {
+            currentScenario = s;
+            document.querySelectorAll('.scenario-tab').forEach(function(tab) { tab.classList.remove('active'); });
+            event.target.classList.add('active');
+            updateCharts();
+        }
+
+        function updateParam() {
+            var evCount = parseInt(document.getElementById('evCount').value);
+            var v1gRate = parseInt(document.getElementById('v1gRate').value);
+            var v2gRate = parseInt(document.getElementById('v2gRate').value);
+            var renewable = parseInt(document.getElementById('renewable').value);
+            var carbonIntensity = parseInt(document.getElementById('carbonIntensity').value);
+            var priceDiff = parseFloat(document.getElementById('priceDiff').value);
+
+            document.getElementById('evCountValue').textContent = evCount.toLocaleString() + ' 辆';
+            document.getElementById('v1gRateValue').textContent = v1gRate + '%';
+            document.getElementById('v2gRateValue').textContent = v2gRate + '%';
+            document.getElementById('renewableValue').textContent = renewable + '%';
+            document.getElementById('carbonIntensityValue').textContent = carbonIntensity + ' g/kWh';
+            document.getElementById('priceDiffValue').textContent = priceDiff.toFixed(1) + ' 元/kWh';
+
+            updateCharts();
+            updateResults();
+        }
+
+        function generateLoadData() {
+            var evCount = parseInt(document.getElementById('evCount').value);
+            var v1gRate = parseInt(document.getElementById('v1gRate').value) / 100;
+            var v2gRate = parseInt(document.getElementById('v2gRate').value) / 100;
+            var baseLoad = [800, 600, 500, 400, 350, 400, 800, 1800, 2500, 2200, 2000, 2200, 2400, 2600, 2800, 3200, 4000, 4800, 5200, 4600, 3600, 2600, 1800, 1200];
+            var multiplier = evCount / 1000;
+            var baseline = baseLoad.map(function(v) { return Math.round(v * multiplier); });
+
+            var v1g = baseline.map(function(v, i) {
+                if (i >= 1 && i <= 6) return Math.round(v * 1.2);
+                if (i >= 18 && i <= 22) return Math.round(v * 0.7);
+                return v;
+            });
+
+            var v2g = v1g.map(function(v, i) {
+                if (i >= 18 && i <= 22) return Math.round(v * 0.5);
+                return v;
+            });
+
+            return { baseline: baseline, v1g: v1g, v2g: v2g };
+        }
+
+        function updateCharts() {
+            var loadData = generateLoadData();
+            var renewable = parseInt(document.getElementById('renewable').value) / 100;
+            var carbonIntensity = parseInt(document.getElementById('carbonIntensity').value);
+            var hours = Array.from({length: 24}, function(_, i) { return i + ':00'; });
+
+            var scenarioName = currentScenario === 'baseline' ? '基准情景' : currentScenario === 'v1g' ? 'V1G情景' : 'V2G情景';
+
+            var loadOption = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#f59e0b' },
+                legend: { data: ['基准情景', 'V1G情景', 'V2G情景', scenarioName], textStyle: { color: '#7a8fa6' } },
+                xAxis: { type: 'category', data: hours, axisLine: { lineStyle: { color: 'rgba(245,158,11,0.3)' } }, axisLabel: { color: '#7a8fa6' } },
+                yAxis: { type: 'value', name: '负荷(kW)', axisLine: { lineStyle: { color: 'rgba(245,158,11,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(245,158,11,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                series: [
+                    { name: '基准情景', type: 'line', data: loadData.baseline, smooth: true, lineStyle: { color: '#95a5a6', width: 2 }, itemStyle: { color: '#95a5a6' } },
+                    { name: 'V1G情景', type: 'line', data: loadData.v1g, smooth: true, lineStyle: { color: '#00d4ff', width: 2 }, itemStyle: { color: '#00d4ff' } },
+                    { name: 'V2G情景', type: 'line', data: loadData.v2g, smooth: true, lineStyle: { color: '#a855f7', width: 2 }, itemStyle: { color: '#a855f7' } },
+                    { name: scenarioName, type: 'line', data: loadData[currentScenario], smooth: true, lineStyle: { color: '#f59e0b', width: 3 }, itemStyle: { color: '#f59e0b' } }
+                ]
+            };
+            charts.load.setOption(loadOption);
+
+            var emissionBaseline = loadData.baseline.map(function(v) { return Math.round(v * carbonIntensity / 1000); });
+            var emissionV1g = loadData.v1g.map(function(v) { return Math.round(v * carbonIntensity * 0.9 / 1000); });
+            var emissionV2g = loadData.v2g.map(function(v) { return Math.round(v * carbonIntensity * 0.85 / 1000); });
+
+            var emissionOption = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#f59e0b' },
+                legend: { data: ['基准', 'V1G', 'V2G'], textStyle: { color: '#7a8fa6' } },
+                xAxis: { type: 'category', data: hours, axisLine: { lineStyle: { color: 'rgba(245,158,11,0.3)' } }, axisLabel: { color: '#7a8fa6' } },
+                yAxis: { type: 'value', name: '碳排放(kg)', axisLine: { lineStyle: { color: 'rgba(245,158,11,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(245,158,11,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                series: [
+                    { name: '基准', type: 'bar', data: emissionBaseline, itemStyle: { color: 'rgba(149,165,166,0.6)', borderRadius: [4, 4, 0, 0] } },
+                    { name: 'V1G', type: 'bar', data: emissionV1g, itemStyle: { color: 'rgba(0,212,255,0.6)', borderRadius: [4, 4, 0, 0] } },
+                    { name: 'V2G', type: 'bar', data: emissionV2g, itemStyle: { color: 'rgba(168,85,247,0.6)', borderRadius: [4, 4, 0, 0] } }
+                ]
+            };
+            charts.emission.setOption(emissionOption);
+
+            var economyOption = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#f59e0b' },
+                legend: { data: ['充电成本', '峰谷套利', '补贴收益'], textStyle: { color: '#7a8fa6' } },
+                xAxis: { type: 'category', data: ['基准', 'V1G', 'V2G'], axisLine: { lineStyle: { color: 'rgba(245,158,11,0.3)' } }, axisLabel: { color: '#7a8fa6' } },
+                yAxis: { type: 'value', name: '金额(元)', axisLine: { lineStyle: { color: 'rgba(245,158,11,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(245,158,11,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                series: [
+                    { name: '充电成本', type: 'bar', data: [1200, 950, 850], itemStyle: { color: '#ff6b6b', borderRadius: [4, 4, 0, 0] } },
+                    { name: '峰谷套利', type: 'bar', data: [0, 280, 350], itemStyle: { color: '#00ff88', borderRadius: [4, 4, 0, 0] } },
+                    { name: '补贴收益', type: 'bar', data: [0, 180, 450], itemStyle: { color: '#00d4ff', borderRadius: [4, 4, 0, 0] } }
+                ]
+            };
+            charts.economy.setOption(economyOption);
+
+            var greenData = [renewable * 100, renewable * 120, renewable * 150];
+            var greenOption = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#f59e0b' },
+                legend: { data: ['绿电消纳率', '减排效率'], textStyle: { color: '#7a8fa6' } },
+                xAxis: { type: 'category', data: ['基准', 'V1G', 'V2G'], axisLine: { lineStyle: { color: 'rgba(245,158,11,0.3)' } }, axisLabel: { color: '#7a8fa6' } },
+                yAxis: [
+                    { type: 'value', name: '消纳率%', max: 50, axisLine: { lineStyle: { color: 'rgba(0,255,136,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(245,158,11,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                    { type: 'value', name: '效率', max: 10, axisLine: { lineStyle: { color: 'rgba(245,158,11,0.3)' } }, splitLine: { show: false }, axisLabel: { color: '#7a8fa6' } }
+                ],
+                series: [
+                    { name: '绿电消纳率', type: 'bar', data: greenData, itemStyle: { color: 'rgba(0,255,136,0.6)', borderRadius: [4, 4, 0, 0] } },
+                    { name: '减排效率', type: 'line', yAxisIndex: 1, data: [0, 4.2, 6.8], smooth: true, lineStyle: { color: '#f59e0b', width: 2 }, itemStyle: { color: '#f59e0b' } }
+                ]
+            };
+            charts.green.setOption(greenOption);
+        }
+
+        function updateResults() {
+            var evCount = parseInt(document.getElementById('evCount').value);
+            var carbonIntensity = parseInt(document.getElementById('carbonIntensity').value);
+            var renewable = parseInt(document.getElementById('renewable').value) / 100;
+            var v1gRate = parseInt(document.getElementById('v1gRate').value) / 100;
+            var v2gRate = parseInt(document.getElementById('v2gRate').value) / 100;
+            var priceDiff = parseFloat(document.getElementById('priceDiff').value);
+
+            var baseEmission = evCount * 45 * carbonIntensity / 1000;
+            var reduction = baseEmission * (v1gRate * 0.3 + v2gRate * 0.5);
+            var actualEmission = baseEmission - reduction;
+            var greenRate = renewable * (1 + v1gRate * 0.3 + v2gRate * 0.5) * 100;
+            var peakDiff = 35 - v1gRate * 15 - v2gRate * 25;
+            var profit = evCount * (v1gRate * 150 + v2gRate * 280 + priceDiff * 50);
+
+            document.getElementById('resCarbon').textContent = Math.round(actualEmission).toLocaleString();
+            document.getElementById('resReduction').textContent = Math.round(reduction).toLocaleString();
+            document.getElementById('resGreen').textContent = greenRate.toFixed(1) + '%';
+            document.getElementById('resPeak').textContent = Math.max(0, peakDiff).toFixed(1) + '%';
+            document.getElementById('resProfit').textContent = Math.round(profit).toLocaleString();
+        }
+
+        function initCharts() {
+            charts.load = echarts.init(document.getElementById('loadCurveChart'));
+            charts.emission = echarts.init(document.getElementById('emissionChart'));
+            charts.economy = echarts.init(document.getElementById('economyChart'));
+            charts.green = echarts.init(document.getElementById('greenChart'));
+            updateCharts();
+            updateResults();
+        }
+
+        window.onload = function() { initCharts(); };
+        window.addEventListener('resize', function() { Object.values(charts).forEach(function(c) { if (c) c.resize(); }); });
+    </script>
+</body>
+</html>

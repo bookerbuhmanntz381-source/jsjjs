@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模块一：低碳决策驾驶舱</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e17 0%, #1a1f3a 50%, #0d1421 100%);
+            min-height: 100vh;
+            color: #e0e6ed;
+        }
+        .header {
+            background: linear-gradient(90deg, rgba(0,212,255,0.08) 0%, rgba(0,0,0,0.4) 50%, rgba(0,212,255,0.08) 100%);
+            border-bottom: 1px solid rgba(0,212,255,0.2);
+            padding: 12px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+            backdrop-filter: blur(15px);
+        }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .back-btn {
+            background: rgba(0,212,255,0.1);
+            border: 1px solid rgba(0,212,255,0.3);
+            color: #00d4ff;
+            padding: 8px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+        .back-btn:hover { background: rgba(0,212,255,0.2); }
+        .header-title { font-size: 1.1em; color: #e0e6ed; }
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .time-display { font-family: 'Courier New', monospace; color: #00d4ff; font-size: 1.1em; }
+        .main-container { padding: 75px 15px 15px; max-width: 1920px; margin: 0 auto; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 15px; }
+        .kpi-card {
+            background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,212,255,0.03) 100%);
+            border: 1px solid rgba(0,212,255,0.15);
+            border-radius: 12px;
+            padding: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-card:hover { border-color: rgba(0,212,255,0.5); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,212,255,0.15); }
+        .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent); opacity: 0.8; }
+        .kpi-icon { font-size: 1.8em; margin-bottom: 10px; }
+        .kpi-label { font-size: 0.75em; color: #7a8fa6; margin-bottom: 8px; }
+        .kpi-value { font-size: 1.6em; font-weight: bold; color: var(--accent); text-shadow: 0 0 15px var(--accent); }
+        .kpi-unit { font-size: 0.7em; color: #5a6a7a; margin-top: 4px; }
+        .kpi-change { font-size: 0.75em; margin-top: 6px; }
+        .kpi-change.up { color: #00ff88; }
+        .kpi-change.down { color: #ff6b6b; }
+        .content-grid { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 15px; }
+        .panel { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,212,255,0.02) 100%); border: 1px solid rgba(0,212,255,0.12); border-radius: 12px; overflow: hidden; }
+        .panel-header { background: linear-gradient(90deg, rgba(0,212,255,0.08) 0%, transparent 100%); padding: 12px 18px; border-bottom: 1px solid rgba(0,212,255,0.1); display: flex; align-items: center; gap: 10px; }
+        .panel-header-icon { font-size: 1.1em; }
+        .panel-header-title { font-size: 0.95em; color: #e0e6ed; font-weight: 600; }
+        .panel-body { padding: 15px; }
+        .chart-container { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+        .chart { width: 100%; height: 220px; }
+        .chart-full { height: 280px; }
+        .center-panel { display: flex; flex-direction: column; gap: 15px; }
+        .main-chart-area { flex: 1; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(5px); }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: linear-gradient(135deg, #1a1f3a 0%, #0d1421 100%); border: 1px solid rgba(0,212,255,0.3); border-radius: 16px; padding: 30px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; animation: modalIn 0.3s ease; }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.9) translateY(-20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid rgba(0,212,255,0.2); }
+        .modal-title { font-size: 1.3em; color: #00d4ff; }
+        .modal-close { background: none; border: none; color: #7a8fa6; font-size: 1.5em; cursor: pointer; }
+        .modal-close:hover { color: #ff6b6b; }
+        .modal-section { margin-bottom: 20px; }
+        .modal-section h4 { font-size: 0.9em; color: #00ff88; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .modal-section p, .modal-section li { font-size: 0.9em; color: #b0bec5; line-height: 1.7; }
+        .modal-section ul { padding-left: 20px; }
+        .modal-section li { margin-bottom: 6px; }
+        .highlight-box { background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2); border-radius: 8px; padding: 15px; margin-top: 10px; }
+        .gauge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .gauge-item { text-align: center; }
+        .gauge-chart { width: 100%; height: 140px; }
+        .gauge-label { font-size: 0.75em; color: #7a8fa6; margin-top: 5px; }
+        .update-info { text-align: center; padding: 12px; color: #5a6a7a; font-size: 0.8em; border-top: 1px solid rgba(0,212,255,0.1); }
+        .update-info span { color: #00d4ff; }
+        @media (max-width: 1400px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } .content-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .content-grid { grid-template-columns: 1fr; } .gauge-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <a href="dashboard.html" class="back-btn">← 返回主页</a>
+            <h1 class="header-title">🎯 模块一：低碳决策驾驶舱</h1>
+        </div>
+        <div class="header-right">
+            <div class="time-display" id="currentTime">00:00:00</div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="kpi-grid">
+            <div class="kpi-card" style="--accent: #00ff88;" onclick="showModal('carbonReduction')">
+                <div class="kpi-icon">🌱</div>
+                <div class="kpi-label">总碳减排量</div>
+                <div class="kpi-value" id="kpiCarbon">3,024</div>
+                <div class="kpi-unit">kg CO₂</div>
+                <div class="kpi-change up">↑ 12.5%</div>
+            </div>
+            <div class="kpi-card" style="--accent: #00d4ff;" onclick="showModal('greenRate')">
+                <div class="kpi-icon">☀️</div>
+                <div class="kpi-label">绿电消纳率</div>
+                <div class="kpi-value" id="kpiGreen">26.2</div>
+                <div class="kpi-unit">%</div>
+                <div class="kpi-change up">↑ 3.2%</div>
+            </div>
+            <div class="kpi-card" style="--accent: #ff9f43;" onclick="showModal('carbonIntensity')">
+                <div class="kpi-icon">⚡</div>
+                <div class="kpi-label">电网碳强度</div>
+                <div class="kpi-value" id="kpiIntensity">680</div>
+                <div class="kpi-unit">g CO₂/kWh</div>
+                <div class="kpi-change down">↓ 5.8%</div>
+            </div>
+            <div class="kpi-card" style="--accent: #a855f7;" onclick="showModal('evCount')">
+                <div class="kpi-icon">🚗</div>
+                <div class="kpi-label">电动汽车接入</div>
+                <div class="kpi-value" id="kpiEV">1,284</div>
+                <div class="kpi-unit">辆</div>
+                <div class="kpi-change up">↑ 8.3%</div>
+            </div>
+            <div class="kpi-card" style="--accent: #ec4899;" onclick="showModal('loadLevel')">
+                <div class="kpi-icon">📊</div>
+                <div class="kpi-label">当前负荷水平</div>
+                <div class="kpi-value" id="kpiLoad">3,450</div>
+                <div class="kpi-unit">kW</div>
+                <div class="kpi-change down">↓ 3.1%</div>
+            </div>
+            <div class="kpi-card" style="--accent: #06b6d4;" onclick="showModal('dispatchMode')">
+                <div class="kpi-icon">🎯</div>
+                <div class="kpi-label">推荐调度模式</div>
+                <div class="kpi-value" id="kpiMode" style="font-size: 1.2em;">V1G</div>
+                <div class="kpi-unit">有序充电</div>
+                <div class="kpi-change">智能推荐</div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">📉</span><span class="panel-header-title">实时监测面板</span></div>
+                <div class="panel-body">
+                    <div class="chart-container"><div id="loadTrendChart" class="chart"></div></div>
+                    <div class="chart-container"><div id="carbonTrendChart" class="chart"></div></div>
+                    <div class="chart-container"><div id="greenTrendChart" class="chart"></div></div>
+                </div>
+            </div>
+
+            <div class="panel center-panel">
+                <div class="panel-header"><span class="panel-header-icon">🗺️</span><span class="panel-header-title">综合分析中心</span></div>
+                <div class="main-chart-area">
+                    <div class="panel-body">
+                        <div class="chart-container"><div id="mainOverviewChart" class="chart chart-full"></div></div>
+                    </div>
+                </div>
+                <div class="panel-header" style="background: linear-gradient(90deg, rgba(168,85,247,0.08) 0%, transparent 100%);">
+                    <span class="panel-header-icon">🎯</span><span class="panel-header-title">多维度雷达分析</span>
+                </div>
+                <div class="panel-body"><div class="chart-container"><div id="radarChart" class="chart"></div></div></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">📊</span><span class="panel-header-title">指标仪表盘</span></div>
+                <div class="panel-body">
+                    <div class="gauge-grid">
+                        <div class="gauge-item"><div id="gaugeCarbon" class="gauge-chart"></div><div class="gauge-label">碳减排达成率</div></div>
+                        <div class="gauge-item"><div id="gaugeGreen" class="gauge-chart"></div><div class="gauge-label">绿电消纳率</div></div>
+                        <div class="gauge-item"><div id="gaugeEfficiency" class="gauge-chart"></div><div class="gauge-label">调度效率</div></div>
+                    </div>
+                    <div class="chart-container" style="margin-top: 15px;"><div id="pieContribution" class="chart"></div></div>
+                    <div class="chart-container"><div id="pieStructure" class="chart"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="update-info">数据自动刷新中... 最后更新时间: <span id="lastUpdate">--:--:--</span> | 点击任意指标卡片查看详情</div>
+    </main>
+
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">指标详情</h2>
+                <button class="modal-close" onclick="hideModal()">×</button>
+            </div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        var charts = {};
+        var currentHighlight = null;
+
+        var indicatorInfo = {
+            carbonReduction: {
+                title: '🌱 总碳减排量',
+                definition: '通过V1G有序充电策略实现的二氧化碳减排总量，反映车网协同对环境效益的贡献。',
+                calculation: '碳减排量 = 基准碳排放 - 实际碳排放\n= Σ(充电量 × 碳强度差值)',
+                factors: ['充电时段选择', '绿电消纳比例', '负荷转移比例', '碳强度波动'],
+                suggestions: ['建议在碳强度低于500g/kWh时段充电', '提高凌晨时段充电比例', '增加绿电配套措施']
+            },
+            greenRate: {
+                title: '☀️ 绿电消纳率',
+                definition: '电动汽车充电过程中使用清洁能源电力的比例，反映新能源消纳能力。',
+                calculation: '绿电消纳率 = 绿电充电量 / 总充电量 × 100%\n反映V2G和清洁能源使用效果',
+                factors: ['光伏发电量', '风电发电量', '充电时段匹配度', 'V2G回馈量'],
+                suggestions: ['建议午间充电以消纳光伏', '夜间可结合风电充电', 'V2G可反向送电']
+            },
+            carbonIntensity: {
+                title: '⚡ 电网碳强度',
+                definition: '电网单位电量产生的碳排放，反映电网运行的清洁程度。',
+                calculation: '碳强度 = 电网总碳排放 / 总发电量\n单位：g CO₂/kWh',
+                factors: ['火电比例', '清洁能源比例', '电网调度策略', '负荷曲线'],
+                suggestions: ['碳强度高于800g/kWh时建议减少充电', '低于500g/kWh是最佳充电时段', '关注实时碳强度波动']
+            },
+            evCount: {
+                title: '🚗 电动汽车接入规模',
+                definition: '当前接入充电桩的电动汽车数量，反映系统服务规模和调度潜力。',
+                calculation: '接入数量 = 可调度EV数量 × 参与率\n反映系统的有效调度资源',
+                factors: ['总EV保有量', '在线参与率', '充电桩覆盖率', '用户活跃度'],
+                suggestions: ['规模化接入可提高调度弹性', '建议提高V1G参与率至60%', '可探索社区充电聚合']
+            },
+            loadLevel: {
+                title: '📊 当前负荷水平',
+                definition: '电网实时负荷，反映电力系统的供需平衡状态。',
+                calculation: '负荷水平 = 当前总用电功率\n单位：kW或MW',
+                factors: ['基础负荷', '充电负荷', '工业负荷', '季节性因素'],
+                suggestions: ['高峰期建议错峰充电', '低谷期适合大规模充电', '负荷波动大时启用V2G']
+            },
+            dispatchMode: {
+                title: '🎯 推荐调度模式',
+                definition: '系统根据实时数据智能推荐的充电调度策略，包括V1G有序充电和V2G双向互动。',
+                calculation: '调度模式选择基于：\n1. 碳强度预测\n2. 负荷预测\n3. 用户行为\n4. 电网状态',
+                factors: ['实时碳强度', '峰谷时段', '用户SOC需求', '电池健康状态'],
+                suggestions: ['V1G：适合常规有序充电', 'V2G：适合高峰时段反向送电', '智能模式：AI自动最优选择']
+            }
+        };
+
+        function showModal(key) {
+            var info = indicatorInfo[key];
+            if (!info) return;
+            currentHighlight = key;
+            document.getElementById('modalTitle').textContent = info.title;
+            document.getElementById('modalBody').innerHTML = 
+                '<div class="modal-section"><h4>📖 指标定义</h4><p>' + info.definition + '</p></div>' +
+                '<div class="modal-section"><h4>🧮 计算逻辑</h4><div class="highlight-box"><p style="white-space: pre-line;">' + info.calculation + '</p></div></div>' +
+                '<div class="modal-section"><h4>📊 影响因素</h4><ul>' + info.factors.map(function(f) { return '<li>' + f + '</li>'; }).join('') + '</ul></div>' +
+                '<div class="modal-section"><h4>💡 优化建议</h4><ul>' + info.suggestions.map(function(s) { return '<li>' + s + '</li>'; }).join('') + '</ul></div>';
+            document.getElementById('modalOverlay').classList.add('active');
+            highlightChart(key);
+        }
+
+        function hideModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+            currentHighlight = null;
+            resetChartHighlight();
+        }
+
+        function closeModal(e) {
+            if (e.target === document.getElementById('modalOverlay')) hideModal();
+        }
+
+        function highlightChart(key) {
+            Object.values(charts).forEach(function(chart) {
+                if (chart) {
+                    var option = chart.getOption();
+                    if (option.series) {
+                        option.series.forEach(function(s) {
+                            if (s.type === 'line' || s.type === 'bar') {
+                                s.lineStyle = s.lineStyle || {};
+                                s.lineStyle.opacity = 0.3;
+                                s.itemStyle = s.itemStyle || {};
+                                s.itemStyle.opacity = 0.3;
+                            }
+                        });
+                        chart.setOption(option);
+                    }
+                }
+            });
+        }
+
+        function resetChartHighlight() {
+            Object.values(charts).forEach(function(chart) {
+                if (chart) {
+                    var option = chart.getOption();
+                    if (option.series) {
+                        option.series.forEach(function(s) {
+                            if (s.type === 'line' || s.type === 'bar') {
+                                s.lineStyle = s.lineStyle || {};
+                                s.lineStyle.opacity = 1;
+                                s.itemStyle = s.itemStyle || {};
+                                s.itemStyle.opacity = 1;
+                            }
+                        });
+                        chart.setOption(option);
+                    }
+                }
+            });
+        }
+
+        function initCharts() {
+            var baseTheme = { backgroundColor: 'transparent', textStyle: { color: '#7a8fa6' } };
+
+            charts.loadTrend = echarts.init(document.getElementById('loadTrendChart'));
+            charts.loadTrend.setOption({
+                ...baseTheme,
+                title: { text: '负荷趋势', textStyle: { fontSize: 12, color: '#e0e6ed' } },
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#00d4ff' },
+                xAxis: { type: 'category', data: generateHourLabels(), axisLine: { lineStyle: { color: 'rgba(0,212,255,0.3)' } }, axisLabel: { color: '#7a8fa6', fontSize: 10 } },
+                yAxis: { type: 'value', axisLine: { lineStyle: { color: 'rgba(0,212,255,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(0,212,255,0.1)' } }, axisLabel: { color: '#7a8fa6', fontSize: 10 } },
+                series: [{ type: 'line', data: generateData(24, 3000, 5000), smooth: true, lineStyle: { color: '#00d4ff', width: 2 }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{offset: 0, color: 'rgba(0,212,255,0.3)'}, {offset: 1, color: 'rgba(0,212,255,0)'}] } }, itemStyle: { color: '#00d4ff' } }]
+            });
+
+            charts.carbonTrend = echarts.init(document.getElementById('carbonTrendChart'));
+            charts.carbonTrend.setOption({
+                ...baseTheme,
+                title: { text: '碳强度趋势', textStyle: { fontSize: 12, color: '#e0e6ed' } },
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#00d4ff' },
+                xAxis: { type: 'category', data: generateHourLabels(), axisLine: { lineStyle: { color: 'rgba(0,212,255,0.3)' } }, axisLabel: { color: '#7a8fa6', fontSize: 10 } },
+                yAxis: { type: 'value', axisLine: { lineStyle: { color: 'rgba(0,212,255,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(0,212,255,0.1)' } }, axisLabel: { color: '#7a8fa6', fontSize: 10 } },
+                series: [{ type: 'line', data: generateData(24, 550, 900), smooth: true, lineStyle: { color: '#ff6b6b', width: 2 }, areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{offset: 0, color: 'rgba(255,107,107,0.3)'}, {offset: 1, color: 'rgba(255,107,107,0)'}] } }, itemStyle: { color: '#ff6b6b' } }]
+            });
+
+            charts.greenTrend = echarts.init(document.getElementById('greenTrendChart'));
+            charts.greenTrend.setOption({
+                ...baseTheme,
+                title: { text: '绿电消纳趋势', textStyle: { fontSize: 12, color: '#e0e6ed' } },
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#00d4ff' },
+                xAxis: { type: 'category', data: generateHourLabels(), axisLine: { lineStyle: { color: 'rgba(0,212,255,0.3)' } }, axisLabel: { color: '#7a8fa6', fontSize: 10 } },
+                yAxis: { type: 'value', max: 50, axisLine: { lineStyle: { color: 'rgba(0,212,255,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(0,212,255,0.1)' } }, axisLabel: { color: '#7a8fa6', fontSize: 10, formatter: '{value}%' } },
+                series: [{ type: 'bar', data: generateData(24, 5, 45), itemStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{offset: 0, color: '#00ff88'}, {offset: 1, color: '#009944'}] }, borderRadius: [4, 4, 0, 0] } }]
+            });
+
+            charts.mainOverview = echarts.init(document.getElementById('mainOverviewChart'));
+            charts.mainOverview.setOption({
+                ...baseTheme,
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#00d4ff' },
+                legend: { data: ['充电负荷', '碳强度', '绿电消纳'], textStyle: { color: '#7a8fa6' }, top: 5 },
+                xAxis: { type: 'category', data: generateHourLabels(), axisLine: { lineStyle: { color: 'rgba(0,212,255,0.3)' } }, axisLabel: { color: '#7a8fa6' } },
+                yAxis: [
+                    { type: 'value', name: '负荷(kW)', axisLine: { lineStyle: { color: 'rgba(0,212,255,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(0,212,255,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                    { type: 'value', name: '碳强度', axisLine: { lineStyle: { color: 'rgba(255,107,107,0.3)' } }, splitLine: { show: false }, axisLabel: { color: '#7a8fa6' } }
+                ],
+                series: [
+                    { name: '充电负荷', type: 'bar', data: generateData(24, 1000, 5000), itemStyle: { color: 'rgba(0,212,255,0.6)', borderRadius: [4, 4, 0, 0] } },
+                    { name: '碳强度', type: 'line', yAxisIndex: 1, data: generateData(24, 550, 900), smooth: true, lineStyle: { color: '#ff6b6b', width: 2 }, itemStyle: { color: '#ff6b6b' } },
+                    { name: '绿电消纳', type: 'line', yAxisIndex: 1, data: generateData(24, 10, 40).map(function(v) { return v * 15; }), smooth: true, lineStyle: { color: '#00ff88', width: 2 }, itemStyle: { color: '#00ff88' } }
+                ]
+            });
+
+            charts.radar = echarts.init(document.getElementById('radarChart'));
+            charts.radar.setOption({
+                ...baseTheme,
+                tooltip: { trigger: 'item', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#00d4ff' },
+                legend: { data: ['当前', '目标'], textStyle: { color: '#7a8fa6' }, top: 5 },
+                radar: {
+                    indicator: [
+                        { name: '碳减排', max: 100 }, { name: '绿电消纳', max: 100 },
+                        { name: '负荷优化', max: 100 }, { name: '用户便利', max: 100 },
+                        { name: '电网稳定', max: 100 }, { name: '经济效益', max: 100 }
+                    ],
+                    axisLine: { lineStyle: { color: 'rgba(0,212,255,0.2)' } },
+                    splitLine: { lineStyle: { color: 'rgba(0,212,255,0.1)' } },
+                    splitArea: { show: false }
+                },
+                series: [{
+                    type: 'radar',
+                    data: [
+                        { value: [78, 65, 82, 75, 80, 70], name: '当前', itemStyle: { color: '#00d4ff' }, areaStyle: { color: 'rgba(0,212,255,0.2)' } },
+                        { value: [90, 80, 90, 85, 90, 85], name: '目标', itemStyle: { color: '#00ff88' }, areaStyle: { color: 'rgba(0,255,136,0.2)' } }
+                    ]
+                }]
+            });
+
+            initGauges();
+            initPies();
+        }
+
+        function initGauges() {
+            var gaugeOption = function(value, color) {
+                return {
+                    series: [{
+                        type: 'gauge',
+                        startAngle: 200,
+                        endAngle: -20,
+                        radius: '90%',
+                        pointer: { show: true, length: '60%', width: 4 },
+                        progress: { show: true, width: 8, itemStyle: { color: color } },
+                        axisLine: { lineStyle: { width: 8, color: [[1, 'rgba(0,212,255,0.15)']] } },
+                        axisTick: { show: false },
+                        splitLine: { show: false },
+                        axisLabel: { show: false },
+                        data: [{ value: value, name: '' }],
+                        detail: { valueAnimation: true, fontSize: 16, color: color, formatter: '{value}%', offsetCenter: [0, '40%'] },
+                        itemStyle: { color: color }
+                    }]
+                };
+            };
+
+            charts.gaugeCarbon = echarts.init(document.getElementById('gaugeCarbon'));
+            charts.gaugeCarbon.setOption(gaugeOption(75.2, '#00ff88'));
+
+            charts.gaugeGreen = echarts.init(document.getElementById('gaugeGreen'));
+            charts.gaugeGreen.setOption(gaugeOption(26.2, '#00d4ff'));
+
+            charts.gaugeEfficiency = echarts.init(document.getElementById('gaugeEfficiency'));
+            charts.gaugeEfficiency.setOption(gaugeOption(83.5, '#a855f7'));
+        }
+
+        function initPies() {
+            charts.pieContribution = echarts.init(document.getElementById('pieContribution'));
+            charts.pieContribution.setOption({
+                backgroundColor: 'transparent',
+                title: { text: '减排贡献来源', textStyle: { fontSize: 12, color: '#e0e6ed' }, left: 'center' },
+                tooltip: { trigger: 'item', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#00d4ff' },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '65%'],
+                    center: ['50%', '55%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: { borderRadius: 6, borderColor: '#0a0e17', borderWidth: 2 },
+                    label: { show: false },
+                    emphasis: { label: { show: true, fontSize: 11, color: '#e0e6ed' } },
+                    data: [
+                        { value: 45, name: '错峰充电', itemStyle: { color: '#00d4ff' } },
+                        { value: 30, name: '绿电匹配', itemStyle: { color: '#00ff88' } },
+                        { value: 15, name: '负荷转移', itemStyle: { color: '#ff9f43' } },
+                        { value: 10, name: 'V2G回馈', itemStyle: { color: '#a855f7' } }
+                    ]
+                }]
+            });
+
+            charts.pieStructure = echarts.init(document.getElementById('pieStructure'));
+            charts.pieStructure.setOption({
+                backgroundColor: 'transparent',
+                title: { text: '充电模式分布', textStyle: { fontSize: 12, color: '#e0e6ed' }, left: 'center' },
+                tooltip: { trigger: 'item', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#00d4ff' },
+                series: [{
+                    type: 'pie',
+                    radius: ['35%', '60%'],
+                    center: ['50%', '55%'],
+                    itemStyle: { borderRadius: 6, borderColor: '#0a0e17', borderWidth: 2 },
+                    label: { show: false },
+                    emphasis: { label: { show: true, fontSize: 10, color: '#e0e6ed' } },
+                    data: [
+                        { value: 55, name: 'V1G', itemStyle: { color: '#00d4ff' } },
+                        { value: 25, name: 'V2G', itemStyle: { color: '#a855f7' } },
+                        { value: 20, name: '无序', itemStyle: { color: '#95a5a6' } }
+                    ]
+                }]
+            });
+        }
+
+        function generateHourLabels() { return Array.from({length: 24}, function(_, i) { return i + ':00'; }); }
+        function generateData(count, min, max) { return Array.from({length: count}, function() { return Math.round(min + Math.random() * (max - min)); }); }
+
+        function updateData() {
+            document.getElementById('kpiCarbon').textContent = Math.round(3000 + Math.random() * 100).toLocaleString();
+            document.getElementById('kpiGreen').textContent = (25 + Math.random() * 3).toFixed(1);
+            document.getElementById('kpiIntensity').textContent = Math.round(670 + Math.random() * 30);
+            document.getElementById('kpiEV').textContent = Math.round(1280 + Math.random() * 30).toLocaleString();
+            document.getElementById('kpiLoad').textContent = Math.round(3400 + Math.random() * 200).toLocaleString();
+            var modes = ['V1G', 'V2G', '智能'];
+            document.getElementById('kpiMode').textContent = modes[Math.floor(Math.random() * modes.length)];
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+
+        function updateCharts() {
+            Object.values(charts).forEach(function(chart) {
+                if (chart) {
+                    var option = chart.getOption();
+                    if (option.series) {
+                        option.series.forEach(function(s) {
+                            if (s.type === 'line') {
+                                s.data = s.data.map(function(v) { return typeof v === 'number' ? Math.round(v * (0.9 + Math.random() * 0.2)) : v; });
+                            } else if (s.type === 'bar' && s.data.length > 0) {
+                                s.data = s.data.map(function(v) { return typeof v === 'number' ? Math.round(v * (0.9 + Math.random() * 0.2)) : v; });
+                            } else if (s.type === 'gauge') {
+                                s.data[0].value = Math.round(s.data[0].value * (0.95 + Math.random() * 0.1));
+                            }
+                        });
+                        chart.setOption(option);
+                    }
+                }
+            });
+        }
+
+        function updateTime() { document.getElementById('currentTime').textContent = new Date().toLocaleTimeString(); }
+
+        window.onload = function() { initCharts(); setInterval(updateTime, 1000); setInterval(updateData, 3000); setInterval(updateCharts, 3000); updateData(); };
+        window.addEventListener('resize', function() { Object.values(charts).forEach(function(chart) { if (chart) chart.resize(); }); });
+    </script>
+</body>
+</html>

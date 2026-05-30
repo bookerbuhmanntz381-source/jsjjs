@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模块六：SHAP模型解释中心</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #0a0e17 0%, #1a1f3a 50%, #0d1421 100%); min-height: 100vh; color: #e0e6ed; }
+        .header { background: linear-gradient(90deg, rgba(34,211,238,0.08) 0%, rgba(0,0,0,0.4) 50%, rgba(34,211,238,0.08) 100%); border-bottom: 1px solid rgba(34,211,238,0.2); padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; backdrop-filter: blur(15px); }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .back-btn { background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.3); color: #22d3ee; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-size: 0.85em; }
+        .back-btn:hover { background: rgba(34,211,238,0.2); }
+        .header-title { font-size: 1.1em; color: #e0e6ed; }
+        .main-container { padding: 75px 15px 15px; max-width: 1920px; margin: 0 auto; }
+        .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .panel { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(34,211,238,0.02) 100%); border: 1px solid rgba(34,211,238,0.12); border-radius: 12px; overflow: hidden; }
+        .panel-header { background: linear-gradient(90deg, rgba(34,211,238,0.08) 0%, transparent 100%); padding: 12px 18px; border-bottom: 1px solid rgba(34,211,238,0.1); display: flex; align-items: center; gap: 10px; }
+        .panel-header-icon { font-size: 1.1em; }
+        .panel-header-title { font-size: 0.95em; color: #e0e6ed; font-weight: 600; }
+        .panel-body { padding: 15px; }
+        .chart { width: 100%; height: 300px; }
+        .feature-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .feature-item { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+        .feature-item:hover { border-color: rgba(34,211,238,0.3); }
+        .feature-item.selected { border-color: #22d3ee; background: rgba(34,211,238,0.1); }
+        .feature-name { font-size: 0.9em; color: #e0e6ed; margin-bottom: 6px; }
+        .feature-value { font-size: 1.1em; color: #22d3ee; font-weight: bold; }
+        .feature-impact { font-size: 0.75em; color: #7a8fa6; margin-top: 4px; }
+        .detail-panel { background: rgba(0,0,0,0.3); border: 1px solid rgba(34,211,238,0.2); border-radius: 10px; padding: 15px; margin-top: 15px; }
+        .detail-title { font-size: 0.95em; color: #22d3ee; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .detail-content { font-size: 0.85em; color: #b0bec5; line-height: 1.6; }
+        .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(34,211,238,0.1); }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label { color: #7a8fa6; }
+        .detail-value { color: #e0e6ed; font-weight: 600; }
+        .simulation-section { margin-top: 15px; }
+        .sim-title { font-size: 0.9em; color: #22d3ee; margin-bottom: 10px; }
+        .sim-buttons { display: flex; gap: 10px; }
+        .sim-btn { background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.3); color: #22d3ee; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+        .sim-btn:hover { background: rgba(34,211,238,0.2); }
+        .sim-btn.active { background: rgba(34,211,238,0.3); }
+        .sim-result { margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; }
+        .sim-result-label { font-size: 0.8em; color: #7a8fa6; margin-bottom: 6px; }
+        .sim-result-value { font-size: 1.3em; color: #22d3ee; font-weight: bold; }
+        @media (max-width: 1200px) { .content-grid { grid-template-columns: 1fr; } .feature-list { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <a href="dashboard.html" class="back-btn">← 返回主页</a>
+            <h1 class="header-title">🧠 模块六：SHAP模型解释中心</h1>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="feature-list">
+            <div class="feature-item" onclick="selectFeature('v2g', event)">
+                <div class="feature-name">⚡ V2G参与率</div>
+                <div class="feature-value">0.342</div>
+                <div class="feature-impact">正向影响 | 贡献率32.5%</div>
+            </div>
+            <div class="feature-item" onclick="selectFeature('renewable', event)">
+                <div class="feature-name">☀️ 清洁能源渗透率</div>
+                <div class="feature-value">0.268</div>
+                <div class="feature-impact">正向影响 | 贡献率25.8%</div>
+            </div>
+            <div class="feature-item" onclick="selectFeature('price', event)">
+                <div class="feature-name">💰 峰谷电价差</div>
+                <div class="feature-value">0.156</div>
+                <div class="feature-impact">正向影响 | 贡献率15.2%</div>
+            </div>
+            <div class="feature-item" onclick="selectFeature('ev', event)">
+                <div class="feature-name">🚗 EV规模</div>
+                <div class="feature-value">0.124</div>
+                <div class="feature-impact">负向影响 | 贡献率12.1%</div>
+            </div>
+            <div class="feature-item" onclick="selectFeature('carbon', event)">
+                <div class="feature-name">💨 电网碳强度</div>
+                <div class="feature-value">0.072</div>
+                <div class="feature-impact">负向影响 | 贡献率7.5%</div>
+            </div>
+            <div class="feature-item" onclick="selectFeature('v1g', event)">
+                <div class="feature-name">🔄 V1G参与率</div>
+                <div class="feature-value">0.048</div>
+                <div class="feature-impact">正向影响 | 贡献率4.8%</div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">📊</span><span class="panel-header-title">SHAP特征重要性排序</span></div>
+                <div class="panel-body">
+                    <div id="shapBarChart" class="chart"></div>
+                    <div class="detail-panel" id="featureDetail">
+                        <div class="detail-title">📌 特征详情</div>
+                        <div class="detail-content">点击左侧特征查看详细解释</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">📈</span><span class="panel-header-title">SHAP特征贡献图</span></div>
+                <div class="panel-body">
+                    <div id="shapScatterChart" class="chart"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">🏗️</span><span class="panel-header-title">SHAP瀑布图</span></div>
+                <div class="panel-body">
+                    <div id="waterfallChart" class="chart"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header"><span class="panel-header-icon">🎯</span><span class="panel-header-title">敏感性分析模拟</span></div>
+                <div class="panel-body">
+                    <div id="sensitivityChart" class="chart"></div>
+                    <div class="simulation-section">
+                        <div class="sim-title">📊 模拟特征提升后的预测变化</div>
+                        <div class="sim-buttons">
+                            <button class="sim-btn" onclick="simulateChange(10)">提升10%</button>
+                            <button class="sim-btn" onclick="simulateChange(20)">提升20%</button>
+                            <button class="sim-btn" onclick="simulateChange(30)">提升30%</button>
+                        </div>
+                        <div class="sim-result" id="simResult">
+                            <div class="sim-result-label">选择特征提升幅度</div>
+                            <div class="sim-result-value">-- kg CO₂</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        var charts = {};
+        var selectedFeature = null;
+        var currentPrediction = 3024;
+
+        var featureInfo = {
+            v2g: { name: 'V2G参与率', definition: '参与V2G双向互动的电动汽车比例', business: 'V2G允许车辆在高峰时段向电网回馈电能，显著提升减排效果', contribution: 32.5, direction: '正向', baseValue: 15 },
+            renewable: { name: '清洁能源渗透率', definition: '光伏和风电发电量占电网总发电量的比例', business: '清洁能源比例越高，充电时碳强度越低，减排效果越好', contribution: 25.8, direction: '正向', baseValue: 20 },
+            price: { name: '峰谷电价差', definition: '高峰电价与低谷电价的差值', business: '合理的峰谷价差能引导用户错峰充电，提升经济性', contribution: 15.2, direction: '正向', baseValue: 0.8 },
+            ev: { name: 'EV规模', definition: '参与调度的新能源电动汽车数量', business: '大规模车辆提供更多调度资源，但增加总用电量', contribution: 12.1, direction: '负向', baseValue: 1000 },
+            carbon: { name: '电网碳强度', definition: '电网单位电量产生的碳排放量', business: '碳强度越低，充电过程产生的碳排放越少', contribution: 7.5, direction: '负向', baseValue: 680 },
+            v1g: { name: 'V1G参与率', definition: '参与单向有序充电的电动汽车比例', business: 'V1G通过时间调度优化充电时段，降低峰值负荷', contribution: 4.8, direction: '正向', baseValue: 30 }
+        };
+
+        function selectFeature(fid, event) {
+            selectedFeature = fid;
+            document.querySelectorAll('.feature-item').forEach(function(item) { item.classList.remove('selected'); });
+            event.target.closest('.feature-item').classList.add('selected');
+            updateFeatureDetail();
+            updateCharts();
+        }
+
+        function updateFeatureDetail() {
+            if (!selectedFeature) return;
+            var info = featureInfo[selectedFeature];
+            document.getElementById('featureDetail').innerHTML = '<div class="detail-title">📌 ' + info.name + ' 特征详情</div>' +
+                '<div class="detail-content"><div class="detail-row"><span class="detail-label">业务定义</span><span class="detail-value">' + info.business + '</span></div>' +
+                '<div class="detail-row"><span class="detail-label">贡献率</span><span class="detail-value">' + info.contribution + '%</span></div>' +
+                '<div class="detail-row"><span class="detail-label">影响方向</span><span class="detail-value">' + info.direction + '</span></div>' +
+                '<div class="detail-row"><span class="detail-label">基准值</span><span class="detail-value">' + info.baseValue + '</span></div></div>';
+        }
+
+        function simulateChange(pct) {
+            if (!selectedFeature) return;
+            document.querySelectorAll('.sim-btn').forEach(function(btn) { btn.classList.remove('active'); });
+            event.target.classList.add('active');
+            var info = featureInfo[selectedFeature];
+            var change = info.direction === '正向' ? pct * 0.1 : -pct * 0.05;
+            var newValue = currentPrediction * (1 + change / 100);
+            document.getElementById('simResult').innerHTML = '<div class="sim-result-label">' + info.name + ' 提升' + pct + '%后的预测减排量</div><div class="sim-result-value">' + Math.round(newValue).toLocaleString() + ' kg CO₂</div>';
+        }
+
+        function updateCharts() {
+            var shapValues = [0.342, 0.268, 0.156, 0.124, 0.072, 0.048];
+            var featureNames = ['V2G参与率', '清洁能源渗透率', '峰谷电价差', 'EV规模', '电网碳强度', 'V1G参与率'];
+            var colors = ['#22d3ee', '#06b6d4', '#00d4ff', '#f97316', '#95a5a6', '#a855f7'];
+
+            var barOption = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#22d3ee' },
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'value', axisLine: { lineStyle: { color: 'rgba(34,211,238,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(34,211,238,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                yAxis: { type: 'category', data: featureNames.slice().reverse(), axisLine: { lineStyle: { color: 'rgba(34,211,238,0.3)' } }, axisLabel: { color: '#7a8fa6' } },
+                series: [{
+                    type: 'bar',
+                    data: shapValues.slice().reverse(),
+                    itemStyle: {
+                        color: function(params) { return colors[5 - params.dataIndex]; },
+                        borderRadius: [0, 4, 4, 0]
+                    },
+                    label: { show: true, position: 'right', color: '#7a8fa6', formatter: '{c}' }
+                }]
+            };
+            charts.shapBar.setOption(barOption);
+
+            var scatterData = [];
+            for (var i = 0; i < 100; i++) {
+                scatterData.push([Math.random() * 100, (Math.random() - 0.5) * 0.5]);
+            }
+
+            var scatterOption = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'item', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#22d3ee' },
+                xAxis: { name: '特征值', type: 'value', axisLine: { lineStyle: { color: 'rgba(34,211,238,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(34,211,238,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                yAxis: { name: 'SHAP值', type: 'value', axisLine: { lineStyle: { color: 'rgba(34,211,238,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(34,211,238,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                series: [{
+                    type: 'scatter',
+                    symbolSize: 8,
+                    data: scatterData,
+                    itemStyle: { color: '#22d3ee', opacity: 0.6 }
+                }]
+            };
+            charts.shapScatter.setOption(scatterOption);
+
+            var waterfallData = [
+                { value: -0.15, itemStyle: { color: '#ef4444' } },
+                { value: 0.12, itemStyle: { color: '#22d3ee' } },
+                { value: 0.08, itemStyle: { color: '#22d3ee' } },
+                { value: -0.05, itemStyle: { color: '#ef4444' } },
+                { value: 0.04, itemStyle: { color: '#22d3ee' } },
+                { value: 0.02, itemStyle: { color: '#22d3ee' } }
+            ];
+            var waterfallLabels = ['电网碳强度', 'V2G参与率', '清洁能源', 'EV规模', '峰谷电价差', 'V1G参与率'];
+
+            var waterfallOption = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#22d3ee', formatter: function(params) { return waterfallLabels[params[0].dataIndex] + ': ' + params[0].value.toFixed(3); } },
+                xAxis: { type: 'category', data: waterfallLabels, axisLine: { lineStyle: { color: 'rgba(34,211,238,0.3)' } }, axisLabel: { color: '#7a8fa6', rotate: 15 } },
+                yAxis: { type: 'value', axisLine: { lineStyle: { color: 'rgba(34,211,238,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(34,211,238,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                series: [{ type: 'bar', data: waterfallData, barWidth: '50%' }]
+            };
+            charts.waterfall.setOption(waterfallOption);
+
+            var sensitivityOption = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(0,0,0,0.7)', borderColor: '#22d3ee' },
+                legend: { data: ['当前预测', '敏感性区间'], textStyle: { color: '#7a8fa6' } },
+                xAxis: { type: 'category', data: ['0%', '10%', '20%', '30%', '40%', '50%'], axisLine: { lineStyle: { color: 'rgba(34,211,238,0.3)' } }, axisLabel: { color: '#7a8fa6' } },
+                yAxis: { type: 'value', name: '预测值', axisLine: { lineStyle: { color: 'rgba(34,211,238,0.3)' } }, splitLine: { lineStyle: { color: 'rgba(34,211,238,0.1)' } }, axisLabel: { color: '#7a8fa6' } },
+                series: [
+                    { name: '当前预测', type: 'line', data: [2800, 2950, 3100, 3250, 3400, 3550], smooth: true, lineStyle: { color: '#22d3ee', width: 3 }, itemStyle: { color: '#22d3ee' } },
+                    { name: '敏感性区间', type: 'area', data: [2700, 2850, 3000, 3150, 3300, 3450], smooth: true, areaStyle: { color: 'rgba(34,211,238,0.1)' }, lineStyle: { color: 'rgba(34,211,238,0.3)', width: 1 }, itemStyle: { color: 'rgba(34,211,238,0.3)' } }
+                ]
+            };
+            charts.sensitivity.setOption(sensitivityOption);
+        }
+
+        function initCharts() {
+            charts.shapBar = echarts.init(document.getElementById('shapBarChart'));
+            charts.shapScatter = echarts.init(document.getElementById('shapScatterChart'));
+            charts.waterfall = echarts.init(document.getElementById('waterfallChart'));
+            charts.sensitivity = echarts.init(document.getElementById('sensitivityChart'));
+            updateCharts();
+        }
+
+        window.onload = function() { initCharts(); };
+        window.addEventListener('resize', function() { Object.values(charts).forEach(function(c) { if (c) c.resize(); }); });
+    </script>
+</body>
+</html>

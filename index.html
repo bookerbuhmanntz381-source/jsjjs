@@ -44,6 +44,15 @@
         .finding-item h3 { font-size: 1.1em; margin-bottom: 8px; color: #2c3e50; }
         .finding-item p { color: #555; font-size: 0.9em; }
         .footer { background: #2c3e50; color: white; padding: 30px; text-align: center; border-radius: 8px; margin-top: 30px; }
+        .quick-link-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.3s; text-decoration: none; display: block; }
+        .quick-link-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3); }
+        .quick-link-card.blue { background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); }
+        .quick-link-card.green { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); }
+        .quick-link-icon { font-size: 3em; margin-bottom: 15px; }
+        .quick-link-title { font-size: 1.3em; font-weight: bold; margin-bottom: 10px; }
+        .quick-link-desc { font-size: 0.95em; opacity: 0.9; margin-bottom: 15px; }
+        .quick-link-btn { background: rgba(255,255,255,0.2); color: white; padding: 8px 20px; border-radius: 20px; text-decoration: none; font-weight: 500; display: inline-block; transition: all 0.2s; }
+        .quick-link-btn:hover { background: rgba(255,255,255,0.3); }
         @media (max-width: 768px) {
             .nav-menu { position: fixed; top: 60px; left: 0; width: 100%; background: #2c3e50; flex-direction: column; align-items: center; max-height: 0; overflow: hidden; transition: max-height 0.3s; }
             .nav-menu.active { max-height: 500px; }
@@ -89,6 +98,7 @@
                     </ul>
                 </li>
                 <li class="nav-item"><a href="conclusion.html" class="nav-link">结论建议</a></li>
+                <li class="nav-item"><a href="dashboard.html" class="nav-link" style="background: linear-gradient(90deg, #00d4ff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold;">⚡ Dashboard</a></li>
             </ul>
         </div>
     </nav>
@@ -107,18 +117,6 @@
                 </div>
                 <div class="chart-container">
                     <div id="pieChart" class="chart"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="chart-section">
-            <h2>⚡ 24小时充电负荷与碳强度分布</h2>
-            <div class="chart-row">
-                <div class="chart-container">
-                    <div id="loadChart" class="chart"></div>
-                </div>
-                <div class="chart-container">
-                    <div id="carbonChart" class="chart"></div>
                 </div>
             </div>
         </div>
@@ -145,83 +143,18 @@
             </div>
         </div>
 
-        <div class="chart-section">
-            <h2>📈 情景对比分析</h2>
-            <div class="chart-row">
-                <div class="chart-container">
-                    <div id="scenarioLoadChart" class="chart"></div>
-                </div>
-                <div class="chart-container">
-                    <div id="scenarioEmissionChart" class="chart"></div>
-                </div>
-            </div>
-        </div>
-
         <div class="chapter-grid">
-            <a href="data.html" class="chapter-card">
-                <div class="chapter-number">01</div>
-                <h2>数据概况与预处理</h2>
-                <p>整合充电行为数据、电网碳强度数据、可再生能源发电数据，进行数据清洗与特征工程。</p>
-                <div class="chapter-tags">
-                    <span class="chapter-tag">数据采集</span>
-                    <span class="chapter-tag">特征工程</span>
-                    <span class="chapter-tag">数据可视化</span>
-                </div>
+            <a href="causal.html" class="quick-link-card blue">
+                <div class="quick-link-icon">⚡</div>
+                <div class="quick-link-title">24小时负荷与碳强度分析</div>
+                <div class="quick-link-desc">探索充电高峰与高碳时段的重叠关系，识别因果机制</div>
+                <span class="quick-link-btn">查看详情 →</span>
             </a>
-
-            <a href="model.html" class="chapter-card">
-                <div class="chapter-number">02</div>
-                <h2>模型训练与结果分析</h2>
-                <p>使用随机森林回归模型分析"充电行为—电网运行—碳排放"之间的关系，识别关键影响因素。</p>
-                <div class="chapter-tags">
-                    <span class="chapter-tag">随机森林</span>
-                    <span class="chapter-tag">SHAP分析</span>
-                    <span class="chapter-tag">特征重要性</span>
-                </div>
-            </a>
-
-            <a href="causal.html" class="chapter-card">
-                <div class="chapter-number">03</div>
-                <h2>因果分析</h2>
-                <p>通过格兰杰因果检验和脉冲响应函数分析，识别变量之间的动态因果关系。</p>
-                <div class="chapter-tags">
-                    <span class="chapter-tag">格兰杰因果</span>
-                    <span class="chapter-tag">脉冲响应</span>
-                    <span class="chapter-tag">方差分解</span>
-                </div>
-            </a>
-
-            <a href="simulation.html" class="chapter-card">
-                <div class="chapter-number">04</div>
-                <h2>仿真预测与情景分析</h2>
-                <p>构建基准情景、V1G有序充电、V2G双向互动三种情景，量化车网协同的碳减排潜力。</p>
-                <div class="chapter-tags">
-                    <span class="chapter-tag">基准情景</span>
-                    <span class="chapter-tag">V1G策略</span>
-                    <span class="chapter-tag">V2G策略</span>
-                </div>
-            </a>
-
-            <a href="optimization.html" class="chapter-card">
-                <div class="chapter-number">05</div>
-                <h2>充电优化分析</h2>
-                <p>识别最优低碳充电窗口，在用户行为约束下优化充电时序，实现碳排放最小化。</p>
-                <div class="chapter-tags">
-                    <span class="chapter-tag">最优窗口</span>
-                    <span class="chapter-tag">时序优化</span>
-                    <span class="chapter-tag">敏感性分析</span>
-                </div>
-            </a>
-
-            <a href="conclusion.html" class="chapter-card">
-                <div class="chapter-number">06</div>
-                <h2>结论与政策建议</h2>
-                <p>提炼核心结论，提出可操作的减排建议和实施路径。</p>
-                <div class="chapter-tags">
-                    <span class="chapter-tag">主要结论</span>
-                    <span class="chapter-tag">政策建议</span>
-                    <span class="chapter-tag">实施路径</span>
-                </div>
+            <a href="simulation.html" class="quick-link-card green">
+                <div class="quick-link-icon">📈</div>
+                <div class="quick-link-title">多情景仿真对比</div>
+                <div class="quick-link-desc">对比基准、V1G、V2G三种策略的碳减排效果与负荷优化</div>
+                <span class="quick-link-btn">查看详情 →</span>
             </a>
         </div>
 
@@ -285,9 +218,9 @@
                             itemStyle: { color: '#3498db' }
                             },
                             {
-                                value: [4826081, 18.9, 72, -0.6, 60],
-                                name: 'V2G情景',
-                                itemStyle: { color: '#2980b9' }
+                            value: [4826081, 18.9, 72, -0.6, 60],
+                            name: 'V2G情景',
+                            itemStyle: { color: '#2980b9' }
                         }
                     ]
                 }]
@@ -322,142 +255,10 @@
             };
             pieChart.setOption(pieOption);
 
-            // 24小时充电负荷曲线
-            var loadChart = echarts.init(document.getElementById('loadChart'));
-            var loadOption = {
-                title: { text: '24小时充电负荷分布', left: 'center', textStyle: { color: '#1e3c72' } },
-                tooltip: { trigger: 'axis', formatter: '小时 {b}:00<br/><strong>{c}</strong> kW' },
-                xAxis: {
-                    type: 'category',
-                    data: Array.from({length: 24}, (_, i) => i),
-                    axisLabel: { formatter: '{value}:00' },
-                    name: '小时'
-                },
-                yAxis: { type: 'value', name: '充电负荷 (kW)', axisLabel: { formatter: '{value}' } },
-                series: [{
-                    name: '充电负荷',
-                    type: 'bar',
-                    data: [1200, 800, 600, 500, 400, 600, 1400, 2800, 3200, 2600, 2200, 2500, 2800, 3000, 3200, 3400, 4200, 4800, 5200, 4600, 3800, 2800, 2000, 1600],
-                    itemStyle: {
-                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                            { offset: 0, color: '#3498db' },
-                            { offset: 1, color: '#2980b9' }
-                        ])
-                    },
-                    areaStyle: {
-                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                            { offset: 0, color: 'rgba(102, 126, 234, 0.5)' },
-                            { offset: 1, color: 'rgba(118, 75, 162, 0.1)' }
-                        ])
-                    }
-                }],
-                grid: { left: '10%', right: '5%', bottom: '15%', top: '15%' }
-            };
-            loadChart.setOption(loadOption);
-
-            // 24小时碳强度曲线
-            var carbonChart = echarts.init(document.getElementById('carbonChart'));
-            var carbonOption = {
-                title: { text: '24小时电网碳强度变化', left: 'center', textStyle: { color: '#1e3c72' } },
-                tooltip: { trigger: 'axis', formatter: '小时 {b}:00<br/><strong>{c}</strong> gCO₂/kWh' },
-                xAxis: {
-                    type: 'category',
-                    data: Array.from({length: 24}, (_, i) => i),
-                    axisLabel: { formatter: '{value}:00' },
-                    name: '小时'
-                },
-                yAxis: { type: 'value', name: '碳强度 (gCO₂/kWh)', axisLabel: { formatter: '{value}' } },
-                series: [{
-                    name: '碳强度',
-                    type: 'line',
-                    smooth: true,
-                    data: [580, 560, 550, 545, 540, 555, 620, 720, 780, 800, 785, 770, 760, 755, 765, 790, 850, 890, 920, 880, 820, 750, 680, 620],
-                    lineStyle: { width: 3, color: '#f5576c' },
-                    itemStyle: { color: '#f5576c' },
-                    areaStyle: {
-                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                            { offset: 0, color: 'rgba(245, 87, 108, 0.4)' },
-                            { offset: 1, color: 'rgba(245, 87, 108, 0.05)' }
-                        ])
-                    },
-                    markLine: {
-                        silent: true,
-                        lineStyle: { color: '#38ef7d', type: 'dashed' },
-                        data: [{ yAxis: 700, label: { content: '低碳阈值', position: 'end' } }]
-                    }
-                }],
-                grid: { left: '10%', right: '5%', bottom: '15%', top: '15%' }
-            };
-            carbonChart.setOption(carbonOption);
-
-            // 情景负荷对比
-            var scenarioLoadChart = echarts.init(document.getElementById('scenarioLoadChart'));
-            var scenarioLoadOption = {
-                title: { text: '不同情景充电负荷对比', left: 'center', textStyle: { color: '#1e3c72' } },
-                tooltip: { trigger: 'axis' },
-                legend: { data: ['基准情景', 'V1G情景', 'V2G情景'], bottom: 0 },
-                xAxis: {
-                    type: 'category',
-                    data: Array.from({length: 24}, (_, i) => i + ':00'),
-                    axisLabel: { interval: 3, rotate: 0 }
-                },
-                yAxis: { type: 'value', name: '负荷 (kW)' },
-                series: [
-                    {
-                        name: '基准情景',
-                        type: 'line',
-                        data: [1200, 800, 600, 500, 400, 600, 1400, 2800, 3200, 2600, 2200, 2500, 2800, 3000, 3200, 3400, 4200, 4800, 5200, 4600, 3800, 2800, 2000, 1600],
-                        lineStyle: { color: '#95a5a6', width: 2 },
-                        itemStyle: { color: '#95a5a6' }
-                    },
-                    {
-                        name: 'V1G情景',
-                        type: 'line',
-                        data: [1600, 1200, 1000, 900, 800, 1200, 2000, 2600, 2800, 2400, 2000, 2200, 2400, 2600, 2800, 3200, 4000, 4200, 4000, 3600, 3000, 2200, 1800, 1600],
-                        lineStyle: { color: '#3498db', width: 2 },
-                        itemStyle: { color: '#3498db' }
-                    },
-                    {
-                        name: 'V2G情景',
-                        type: 'line',
-                        data: [1400, 1000, 800, 700, 600, 800, 1600, 3000, 3400, 2800, 2400, 2700, 3000, 3200, 3400, 3600, 4000, 4400, 4800, 4200, 3400, 2400, 1800, 1400],
-                        lineStyle: { color: '#2980b9', width: 2 },
-                        itemStyle: { color: '#2980b9' }
-                    }
-                ],
-                grid: { left: '10%', right: '5%', bottom: '15%', top: '15%' }
-            };
-            scenarioLoadChart.setOption(scenarioLoadOption);
-
-            // 情景碳排放对比
-            var scenarioEmissionChart = echarts.init(document.getElementById('scenarioEmissionChart'));
-            var scenarioEmissionOption = {
-                title: { text: '各情景碳排放总量对比', left: 'center', textStyle: { color: '#1e3c72' } },
-                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-                xAxis: { type: 'category', data: ['基准情景', 'V1G情景', 'V2G情景'] },
-                yAxis: { type: 'value', name: '碳排放量 (kg)', axisLabel: { formatter: '{value}' } },
-                series: [{
-                    type: 'bar',
-                    data: [
-                        { value: 4825638.70, itemStyle: { color: '#95a5a6' } },
-                        { value: 4822614.92, itemStyle: { color: '#3498db' } },
-                        { value: 4826081.13, itemStyle: { color: '#2980b9' } }
-                    ],
-                    label: { show: true, position: 'top', formatter: '{c} kg' },
-                    barWidth: '50%'
-                }],
-                grid: { left: '15%', right: '10%', bottom: '15%', top: '15%' }
-            };
-            scenarioEmissionChart.setOption(scenarioEmissionOption);
-
             // 响应式
             window.addEventListener('resize', function() {
                 mainChart.resize();
                 pieChart.resize();
-                loadChart.resize();
-                carbonChart.resize();
-                scenarioLoadChart.resize();
-                scenarioEmissionChart.resize();
             });
         }
     </script>

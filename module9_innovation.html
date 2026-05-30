@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模块九：研究创新展示中心</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #0a0e17 0%, #1a1f3a 50%, #0d1421 100%); min-height: 100vh; color: #e0e6ed; }
+        .header { background: linear-gradient(90deg, rgba(168,85,247,0.08) 0%, rgba(0,0,0,0.4) 50%, rgba(168,85,247,0.08) 100%); border-bottom: 1px solid rgba(168,85,247,0.2); padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; position: fixed; top: 0; left: 0; right: 0; z-index: 1000; backdrop-filter: blur(15px); }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .back-btn { background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); color: #a855f7; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-size: 0.85em; }
+        .back-btn:hover { background: rgba(168,85,247,0.2); }
+        .header-title { font-size: 1.1em; color: #e0e6ed; }
+        .main-container { padding: 75px 15px 15px; max-width: 1400px; margin: 0 auto; }
+        .intro { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(168,85,247,0.02) 100%); border: 1px solid rgba(168,85,247,0.12); border-radius: 12px; padding: 25px; margin-bottom: 20px; text-align: center; }
+        .intro h2 { font-size: 1.3em; color: #a855f7; margin-bottom: 10px; }
+        .intro p { font-size: 0.95em; color: #b0bec5; line-height: 1.6; max-width: 800px; margin: 0 auto; }
+        .innovation-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .innovation-card { background: linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(168,85,247,0.03) 100%); border: 1px solid rgba(168,85,247,0.15); border-radius: 16px; overflow: hidden; transition: all 0.3s; cursor: pointer; }
+        .innovation-card:hover { transform: translateY(-5px); box-shadow: 0 12px 35px rgba(168,85,247,0.2); border-color: rgba(168,85,247,0.4); }
+        .card-header { background: linear-gradient(135deg, rgba(168,85,247,0.1) 0%, transparent 100%); padding: 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(168,85,247,0.1); }
+        .card-number { width: 50px; height: 50px; background: linear-gradient(135deg, #a855f7, #8b5cf6); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5em; font-weight: bold; color: white; }
+        .card-title { flex: 1; }
+        .card-title h3 { font-size: 1.1em; color: #e0e6ed; margin-bottom: 4px; }
+        .card-title p { font-size: 0.8em; color: #7a8fa6; }
+        .card-body { padding: 20px; display: none; }
+        .card-body.active { display: block; animation: slideDown 0.3s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .card-content { font-size: 0.9em; color: #b0bec5; line-height: 1.7; margin-bottom: 15px; }
+        .card-content h4 { font-size: 1em; color: #a855f7; margin: 12px 0 8px; }
+        .card-content ul { padding-left: 20px; }
+        .card-content li { margin-bottom: 6px; }
+        .highlight-box { background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.2); border-radius: 10px; padding: 15px; margin-top: 12px; }
+        .highlight-box h5 { font-size: 0.9em; color: #a855f7; margin-bottom: 8px; }
+        .highlight-box p { font-size: 0.85em; color: #e0e6ed; }
+        .framework-diagram { background: rgba(0,0,0,0.3); border-radius: 10px; padding: 20px; margin: 15px 0; text-align: center; }
+        .framework-diagram .node { display: inline-block; background: rgba(168,85,247,0.15); border: 1px solid rgba(168,85,247,0.3); border-radius: 8px; padding: 10px 18px; margin: 8px; font-size: 0.85em; color: #e0e6ed; }
+        .framework-diagram .arrow { color: rgba(168,85,247,0.5); margin: 0 5px; }
+        .card-toggle { background: rgba(168,85,247,0.1); border: none; color: #a855f7; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 0.85em; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
+        .card-toggle:hover { background: rgba(168,85,247,0.2); }
+        @media (max-width: 768px) { .innovation-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <a href="dashboard.html" class="back-btn">← 返回主页</a>
+            <h1 class="header-title">💡 模块九：研究创新展示中心</h1>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="intro">
+            <h2>🔬 研究创新成果</h2>
+            <p>本研究围绕"新能源电动汽车低碳充电优化"主题，构建了充电行为-电网运行-碳排放全链条分析框架，实现了V1G与V2G差异化建模、因果分析与SHAP可解释性融合创新。</p>
+        </div>
+
+        <div class="innovation-grid">
+            <div class="innovation-card">
+                <div class="card-header">
+                    <div class="card-number">1</div>
+                    <div class="card-title">
+                        <h3>全链条分析框架</h3>
+                        <p>充电行为—电网运行—碳排放</p>
+                    </div>
+                </div>
+                <div class="card-body" id="card1">
+                    <div class="card-content">
+                        <h4>创新点描述</h4>
+                        <p>构建了从用户充电行为到电网运行状态再到碳排放影响的全链条分析框架，打通了"微观充电行为-中观电网调度-宏观碳排放"的跨层次分析路径。</p>
+                        <div class="framework-diagram">
+                            <div class="node">用户充电行为</div>
+                            <span class="arrow">→</span>
+                            <div class="node">电网负荷变化</div>
+                            <span class="arrow">→</span>
+                            <div class="node">调度策略优化</div>
+                            <span class="arrow">→</span>
+                            <div class="node">碳排放影响</div>
+                        </div>
+                        <h4>关键技术</h4>
+                        <ul>
+                            <li>多源数据融合：充电数据 + 电网数据 + 气象数据</li>
+                            <li>时序对齐：15分钟→1小时多尺度融合</li>
+                            <li>因果追溯：Granger检验 + 脉冲响应分析</li>
+                        </ul>
+                        <div class="highlight-box">
+                            <h5>🎯 应用价值</h5>
+                            <p>实现了从单点优化到系统优化的跃升，为电网调度提供决策支持</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="card-toggle" onclick="toggleCard(1)">点击展开详情 ↓</button>
+            </div>
+
+            <div class="innovation-card">
+                <div class="card-header">
+                    <div class="card-number">2</div>
+                    <div class="card-title">
+                        <h3>V1G与V2G差异化建模</h3>
+                        <p>单向有序充电与双向互动</p>
+                    </div>
+                </div>
+                <div class="card-body" id="card2">
+                    <div class="card-content">
+                        <h4>创新点描述</h4>
+                        <p>首次系统性地对V1G（单向有序充电）和V2G（双向能量互动）进行差异化数学建模，量化分析两种模式的适用场景和边际效益。</p>
+                        <h4>模型对比</h4>
+                        <ul>
+                            <li><strong>V1G模型：</strong>基于时间窗口的离散优化，重点在削峰填谷</li>
+                            <li><strong>V2G模型：</strong>考虑双向能量流的连续优化，包含放电收益</li>
+                            <li><strong>差异化参数：</strong>参与门槛、响应速度、补贴敏感性</li>
+                        </ul>
+                        <div class="highlight-box">
+                            <h5>🎯 核心发现</h5>
+                            <p>V2G边际效益是V1G的1.8倍，但需要更高的用户参与门槛</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="card-toggle" onclick="toggleCard(2)">点击展开详情 ↓</button>
+            </div>
+
+            <div class="innovation-card">
+                <div class="card-header">
+                    <div class="card-number">3</div>
+                    <div class="card-title">
+                        <h3>格兰杰因果分析</h3>
+                        <p>动态因果网络构建</p>
+                    </div>
+                </div>
+                <div class="card-body" id="card3">
+                    <div class="card-content">
+                        <h4>创新点描述</h4>
+                        <p>采用Granger因果检验和脉冲响应分析，构建变量间的动态因果网络，识别关键传导路径和时滞效应。</p>
+                        <h4>因果路径</h4>
+                        <ul>
+                            <li>充电负荷 → 碳强度（滞后2小时）</li>
+                            <li>碳强度 → 绿电匹配度（滞后1小时）</li>
+                            <li>V2G参与率 → 峰谷差率（滞后4小时）</li>
+                        </ul>
+                        <div class="highlight-box">
+                            <h5>🎯 政策启示</h5>
+                            <p>通过调节峰谷电价可有效引导充电行为，滞后效应需纳入政策评估</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="card-toggle" onclick="toggleCard(3)">点击展开详情 ↓</button>
+            </div>
+
+            <div class="innovation-card">
+                <div class="card-header">
+                    <div class="card-number">4</div>
+                    <div class="card-title">
+                        <h3>SHAP可解释性分析</h3>
+                        <p>模型黑箱的解释框架</p>
+                    </div>
+                </div>
+                <div class="card-body" id="card4">
+                    <div class="card-content">
+                        <h4>创新点描述</h4>
+                        <p>将SHAP（SHapley Additive exPlanations）方法引入电动汽车减排预测，解释每个特征对预测结果的贡献。</p>
+                        <h4>特征贡献排序</h4>
+                        <ul>
+                            <li>V2G参与率：32.5%（最重要）</li>
+                            <li>清洁能源渗透率：25.8%</li>
+                            <li>峰谷电价差：15.2%</li>
+                            <li>EV规模：12.1%</li>
+                        </ul>
+                        <div class="highlight-box">
+                            <h5>🎯 业务洞察</h5>
+                            <p>V2G是减排的核心杠杆，应作为政策重点支持方向</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="card-toggle" onclick="toggleCard(4)">点击展开详情 ↓</button>
+            </div>
+
+            <div class="innovation-card">
+                <div class="card-header">
+                    <div class="card-number">5</div>
+                    <div class="card-title">
+                        <h3>敏感性分级决策</h3>
+                        <p>参数敏感性分级优化</p>
+                    </div>
+                </div>
+                <div class="card-body" id="card5">
+                    <div class="card-content">
+                        <h4>创新点描述</h4>
+                        <p>基于敏感性分析将决策参数分为高敏感、中敏感、低敏感三个等级，实现分级优化和优先级排序。</p>
+                        <h4>敏感性分级</h4>
+                        <ul>
+                            <li><strong>高敏感（>20%）：</strong>V2G补贴、碳积分奖励</li>
+                            <li><strong>中敏感（10-20%）：</strong>峰谷电价差、绿电渗透率</li>
+                            <li><strong>低敏感（<10%）：</strong>充电桩密度、参与门槛</li>
+                        </ul>
+                        <div class="highlight-box">
+                            <h5>🎯 决策建议</h5>
+                            <p>优先调整高敏感参数，以最小政策成本获取最大减排效果</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="card-toggle" onclick="toggleCard(5)">点击展开详情 ↓</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        var expandedCards = {};
+
+        function toggleCard(num) {
+            var card = document.getElementById('card' + num);
+            var btn = event.target;
+            if (expandedCards[num]) {
+                card.classList.remove('active');
+                btn.innerHTML = '点击展开详情 ↓';
+                expandedCards[num] = false;
+            } else {
+                card.classList.add('active');
+                btn.innerHTML = '点击收起详情 ↑';
+                expandedCards[num] = true;
+            }
+        }
+    </script>
+</body>
+</html>
